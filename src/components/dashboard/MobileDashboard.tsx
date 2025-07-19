@@ -65,31 +65,137 @@ export function MobileDashboard() {
     setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
-  // Sample events with different categories
-  const sampleEvents = [
-    {
-      id: 1,
-      title: "TECH CONFERENCE 2024",
-      category: "Technology",
-      time: "09:00 AM",
-      date: "Dec 15",
-      status: "Registration Open",
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
-      participants: 150,
-      maxParticipants: 200
-    },
-    {
-      id: 2,
-      title: "DESIGN WORKSHOP",
-      category: "Creative",
-      time: "02:00 PM", 
-      date: "Dec 18",
-      status: "Almost Full",
-      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=200&fit=crop",
-      participants: 45,
-      maxParticipants: 50
+  // Sports events distributed across 4 days
+  const allEvents = {
+    "DAY-01": [
+      {
+        id: 1,
+        title: "🏸 BADMINTON TOURNAMENT",
+        day: "DAY-01",
+        time: "09:00 AM",
+        date: "Dec 15",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1544717684-7ba720c2b5ea?w=400&h=200&fit=crop",
+        participants: 24,
+        maxParticipants: 32
+      },
+      {
+        id: 2,
+        title: "🏀 BASKETBALL CHAMPIONSHIP",
+        day: "DAY-01",
+        time: "02:00 PM",
+        date: "Dec 15",
+        status: "Almost Full",
+        image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=200&fit=crop",
+        participants: 28,
+        maxParticipants: 30
+      },
+      {
+        id: 3,
+        title: "⚽ FOOTBALL MATCH",
+        day: "DAY-01",
+        time: "05:00 PM",
+        date: "Dec 15",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=200&fit=crop",
+        participants: 18,
+        maxParticipants: 22
+      }
+    ],
+    "DAY-02": [
+      {
+        id: 4,
+        title: "🏐 VOLLEYBALL LEAGUE",
+        day: "DAY-02",
+        time: "10:00 AM",
+        date: "Dec 16",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&h=200&fit=crop",
+        participants: 16,
+        maxParticipants: 24
+      },
+      {
+        id: 5,
+        title: "🏏 CRICKET TOURNAMENT",
+        day: "DAY-02",
+        time: "01:00 PM",
+        date: "Dec 16",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400&h=200&fit=crop",
+        participants: 20,
+        maxParticipants: 22
+      }
+    ],
+    "DAY-03": [
+      {
+        id: 6,
+        title: "🏃 ATHLETICS MEET",
+        day: "DAY-03",
+        time: "08:00 AM",
+        date: "Dec 17",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop",
+        participants: 45,
+        maxParticipants: 60
+      },
+      {
+        id: 7,
+        title: "🥋 KARATE CHAMPIONSHIP",
+        day: "DAY-03",
+        time: "03:00 PM",
+        date: "Dec 17",
+        status: "Almost Full",
+        image: "https://images.unsplash.com/photo-1555597673-b21d5c935865?w=400&h=200&fit=crop",
+        participants: 18,
+        maxParticipants: 20
+      },
+      {
+        id: 8,
+        title: "🥊 BOXING COMPETITION",
+        day: "DAY-03",
+        time: "06:00 PM",
+        date: "Dec 17",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400&h=200&fit=crop",
+        participants: 12,
+        maxParticipants: 16
+      }
+    ],
+    "DAY-04": [
+      {
+        id: 9,
+        title: "🧗 ROCK CLIMBING CHALLENGE",
+        day: "DAY-04",
+        time: "09:00 AM",
+        date: "Dec 18",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1522163182402-834f871fd851?w=400&h=200&fit=crop",
+        participants: 8,
+        maxParticipants: 15
+      },
+      {
+        id: 10,
+        title: "🏓 TABLE TENNIS TOURNAMENT",
+        day: "DAY-04",
+        time: "02:00 PM",
+        date: "Dec 18",
+        status: "Registration Open",
+        image: "https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&h=200&fit=crop",
+        participants: 14,
+        maxParticipants: 20
+      }
+    ]
+  };
+
+  // Get events for selected day
+  const getEventsForDay = (day: string) => {
+    if (day === "ALL") {
+      return Object.values(allEvents).flat();
     }
-  ];
+    return allEvents[day as keyof typeof allEvents] || [];
+  };
+
+  const sampleEvents = getEventsForDay(selectedFilter);
 
   const completedSampleEvents = [
     {
@@ -273,7 +379,7 @@ export function MobileDashboard() {
                   <div className="space-y-4">
                     {/* Filter Buttons */}
                     <div className="flex gap-2 overflow-x-auto pb-2">
-                      {["DAY-01", "DAY-02", "DAY-03", "DAY-04"].map((filter) => (
+                      {["ALL", "DAY-01", "DAY-02", "DAY-03", "DAY-04"].map((filter) => (
                         <Button
                           key={filter}
                           variant={selectedFilter === filter ? "default" : "outline"}
