@@ -24,9 +24,10 @@ import {
   Download,
   FileText,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Timer
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router";
 import useEmblaCarousel from 'embla-carousel-react';
 
@@ -65,7 +66,7 @@ export function MobileDashboard() {
     setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
-  // Sports events distributed across 4 days
+  // Sports events distributed across 4 days with registration deadlines
   const allEvents = {
     "DAY-01": [
       {
@@ -77,7 +78,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1544717684-7ba720c2b5ea?w=400&h=200&fit=crop",
         participants: 24,
-        maxParticipants: 32
+        maxParticipants: 32,
+        registrationDeadline: Date.now() + (2 * 24 * 60 * 60 * 1000) // 2 days from now
       },
       {
         id: 2,
@@ -88,7 +90,8 @@ export function MobileDashboard() {
         status: "Almost Full",
         image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=200&fit=crop",
         participants: 28,
-        maxParticipants: 30
+        maxParticipants: 30,
+        registrationDeadline: Date.now() + (1 * 24 * 60 * 60 * 1000) // 1 day from now
       },
       {
         id: 3,
@@ -99,7 +102,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=400&h=200&fit=crop",
         participants: 18,
-        maxParticipants: 22
+        maxParticipants: 22,
+        registrationDeadline: Date.now() + (3 * 24 * 60 * 60 * 1000) // 3 days from now
       }
     ],
     "DAY-02": [
@@ -112,7 +116,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&h=200&fit=crop",
         participants: 16,
-        maxParticipants: 24
+        maxParticipants: 24,
+        registrationDeadline: Date.now() + (4 * 24 * 60 * 60 * 1000) // 4 days from now
       },
       {
         id: 5,
@@ -123,7 +128,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400&h=200&fit=crop",
         participants: 20,
-        maxParticipants: 22
+        maxParticipants: 22,
+        registrationDeadline: Date.now() + (5 * 24 * 60 * 60 * 1000) // 5 days from now
       }
     ],
     "DAY-03": [
@@ -136,7 +142,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop",
         participants: 45,
-        maxParticipants: 60
+        maxParticipants: 60,
+        registrationDeadline: Date.now() + (6 * 24 * 60 * 60 * 1000) // 6 days from now
       },
       {
         id: 7,
@@ -147,7 +154,8 @@ export function MobileDashboard() {
         status: "Almost Full",
         image: "https://images.unsplash.com/photo-1555597673-b21d5c935865?w=400&h=200&fit=crop",
         participants: 18,
-        maxParticipants: 20
+        maxParticipants: 20,
+        registrationDeadline: Date.now() + (12 * 60 * 60 * 1000) // 12 hours from now
       },
       {
         id: 8,
@@ -158,7 +166,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=400&h=200&fit=crop",
         participants: 12,
-        maxParticipants: 16
+        maxParticipants: 16,
+        registrationDeadline: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days from now
       }
     ],
     "DAY-04": [
@@ -171,7 +180,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1522163182402-834f871fd851?w=400&h=200&fit=crop",
         participants: 8,
-        maxParticipants: 15
+        maxParticipants: 15,
+        registrationDeadline: Date.now() + (8 * 24 * 60 * 60 * 1000) // 8 days from now
       },
       {
         id: 10,
@@ -182,7 +192,8 @@ export function MobileDashboard() {
         status: "Registration Open",
         image: "https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&h=200&fit=crop",
         participants: 14,
-        maxParticipants: 20
+        maxParticipants: 20,
+        registrationDeadline: Date.now() + (2 * 60 * 60 * 1000) // 2 hours from now
       }
     ]
   };
@@ -215,6 +226,51 @@ export function MobileDashboard() {
       hasCertificate: true
     }
   ];
+
+  // Countdown Timer Component
+  const CountdownTimer = ({ deadline }: { deadline: number }) => {
+    const [timeLeft, setTimeLeft] = useState(deadline - Date.now());
+
+    useEffect(() => {
+      const timer = setInterval(() => {
+        const remaining = deadline - Date.now();
+        setTimeLeft(remaining > 0 ? remaining : 0);
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }, [deadline]);
+
+    const formatTime = (ms: number) => {
+      if (ms <= 0) return "Registration Closed";
+      
+      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+
+      if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+      if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+      return `${minutes}m ${seconds}s`;
+    };
+
+    const isUrgent = timeLeft <= 24 * 60 * 60 * 1000; // Less than 24 hours
+    const isCritical = timeLeft <= 2 * 60 * 60 * 1000; // Less than 2 hours
+
+    return (
+      <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+        timeLeft <= 0 
+          ? 'bg-red-500/20 text-red-600' 
+          : isCritical 
+            ? 'bg-red-500/20 text-red-600' 
+            : isUrgent 
+              ? 'bg-orange-500/20 text-orange-600' 
+              : 'bg-green-500/20 text-green-600'
+      }`}>
+        <Timer className="h-3 w-3" />
+        <span className="font-medium">{formatTime(timeLeft)}</span>
+      </div>
+    );
+  };
 
   const sections = [
     { title: "Upcoming Events", icon: Calendar },
@@ -417,6 +473,11 @@ export function MobileDashboard() {
                                   {event.status}
                                 </span>
                               </div>
+                            </div>
+
+                            {/* Countdown Timer */}
+                            <div className="absolute top-3 right-3">
+                              <CountdownTimer deadline={event.registrationDeadline} />
                             </div>
 
                             {/* Event Info */}
