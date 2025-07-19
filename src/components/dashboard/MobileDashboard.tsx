@@ -536,6 +536,15 @@ export function MobileDashboard() {
                               variant="outline" 
                               size="sm" 
                               className="flex-1 rounded-full font-medium border-border hover:bg-accent/10 text-xs py-1"
+                              onClick={() => {
+                                const sportMap: { [key: string]: string } = {
+                                  "🏸 BADMINTON TOURNAMENT": "badminton",
+                                  "🏀 BASKETBALL CHAMPIONSHIP": "basketball", 
+                                  "⚽ FOOTBALL MATCH": "football"
+                                };
+                                const eventKey = sportMap[event.title] || "badminton";
+                                navigate(`/event/${eventKey}`);
+                              }}
                             >
                               View Details
                             </Button>

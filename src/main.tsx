@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { VlyToolbar } from "@/components/VlyToolbar";
 import { InstrumentationProvider } from "@/instrumentation.tsx";
 import Auth from "@/pages/Auth.tsx";
+import EventInfo from "@/pages/EventInfo.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import { StrictMode, useEffect } from "react";
@@ -49,6 +50,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/event/:eventId" element={<EventInfo />} />
           </Routes>
         </BrowserRouter>
         <Toaster />
