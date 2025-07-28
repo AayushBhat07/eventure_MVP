@@ -64,28 +64,27 @@ export function BackgroundPaths({
                 <FloatingPaths position={-1} />
             </div>
 
-            <div className="relative z-10 container mx-auto px-4 md:px-6 text-center">
+            {/* Title positioned above navbar */}
+            <div className="absolute top-20 sm:top-24 left-1/2 -translate-x-1/2 z-40">
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 2 }}
-                    className="max-w-4xl mx-auto"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                    className="text-center"
                 >
-                    <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold mb-8 tracking-tighter">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter">
                         {words.map((word, wordIndex) => (
                             <span
                                 key={wordIndex}
-                                className="inline-block mr-4 last:mr-0"
+                                className="inline-block mr-3 last:mr-0"
                             >
                                 {word.split("").map((letter, letterIndex) => (
                                     <motion.span
                                         key={`${wordIndex}-${letterIndex}`}
-                                        initial={{ y: 100, opacity: 0 }}
+                                        initial={{ y: 50, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{
-                                            delay:
-                                                wordIndex * 0.1 +
-                                                letterIndex * 0.03,
+                                            delay: 0.7 + wordIndex * 0.1 + letterIndex * 0.03,
                                             type: "spring",
                                             stiffness: 150,
                                             damping: 25,
@@ -100,7 +99,16 @@ export function BackgroundPaths({
                             </span>
                         ))}
                     </h1>
+                </motion.div>
+            </div>
 
+            <div className="relative z-10 container mx-auto px-4 md:px-6 text-center">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 2, delay: 1.2 }}
+                    className="max-w-4xl mx-auto"
+                >
                     <div
                         className="inline-block group relative bg-gradient-to-b from-black/10 to-white/10 
                         dark:from-white/10 dark:to-black/10 p-px rounded-2xl backdrop-blur-lg 
