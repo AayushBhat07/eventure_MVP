@@ -8,7 +8,7 @@ export default function Landing() {
       <HeroGeometric 
         badge="EventHub"
         title1="One App. Every Event."
-        title2="Effortlessly"
+        title2="Zero Hassle."
       />
       
       {/* Navigation overlay */}
