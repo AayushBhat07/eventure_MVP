@@ -1,7 +1,8 @@
 import { Protected } from "@/lib/protected-page";
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
-import { Home, Calendar, Trophy, User, Settings } from "lucide-react";
+import { Home, Calendar, Trophy, User, Settings, Bike, Dribbble, Swords } from "lucide-react";
+import { BrutalistSportsCard } from "@/components/ui/brutalist-sports-card";
 
 export default function Dashboard() {
   const navItems = [
@@ -10,6 +11,33 @@ export default function Dashboard() {
     { name: 'Certificates', url: '/certificates', icon: Trophy },
     { name: 'Profile', url: '/profile', icon: User },
     { name: 'Settings', url: '/settings', icon: Settings }
+  ];
+
+  const events = [
+    {
+      sport: "Cycling",
+      title: "Mountain Bike Championship",
+      date: "2024-08-15",
+      time: "09:00 AM",
+      venue: "Pine Ridge Trail",
+      icon: <Bike />,
+    },
+    {
+      sport: "Basketball",
+      title: "Summer Slam 3v3",
+      date: "2024-08-20",
+      time: "02:00 PM",
+      venue: "City Center Arena",
+      icon: <Dribbble />,
+    },
+    {
+      sport: "Fencing",
+      title: "Regional Epee Tournament",
+      date: "2024-09-01",
+      time: "10:00 AM",
+      venue: "Knights Hall",
+      icon: <Swords />,
+    },
   ];
 
   return (
@@ -28,6 +56,20 @@ export default function Dashboard() {
             Event Dashboard
           </h1>
         </div>
+      </div>
+
+      <div className="pt-48 flex flex-wrap justify-center">
+        {events.map((event, index) => (
+          <BrutalistSportsCard
+            key={index}
+            sport={event.sport}
+            title={event.title}
+            date={event.date}
+            time={event.time}
+            venue={event.venue}
+            icon={event.icon}
+          />
+        ))}
       </div>
     </Protected>
   );
