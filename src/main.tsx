@@ -1,62 +1,39 @@
-import { Toaster } from "@/components/ui/sonner";
-import { VlyToolbar } from "@/components/VlyToolbar";
-import { InstrumentationProvider } from "@/instrumentation.tsx";
-import Auth from "@/pages/Auth.tsx";
-import EventInfo from "@/pages/EventInfo.tsx";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
-import { ConvexReactClient } from "convex/react";
-import { StrictMode, useEffect } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router";
-import "./index.css";
+import { BrowserRouter, Routes, Route } from "react-router";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { Toaster } from "@/components/ui/sonner";
+
+import Landing from "./pages/Landing.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Events from "./pages/Events.tsx";
-import Landing from "./pages/Landing.tsx";
+import Profile from "./pages/Profile.tsx";
+import EventInfo from "./pages/EventInfo.tsx";
+import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
+
+import "./index.css";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
-function RouteSyncer() {
-  const location = useLocation();
-  useEffect(() => {
-    window.parent.postMessage(
-      { type: "iframe-route-change", path: location.pathname },
-      "*",
-    );
-  }, [location.pathname]);
-
-  useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      if (event.data?.type === "navigate") {
-        if (event.data.direction === "back") window.history.back();
-        if (event.data.direction === "forward") window.history.forward();
-      }
-    }
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  return null;
-}
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <VlyToolbar />
-    <InstrumentationProvider>
+    <ConvexProvider client={convex}>
       <ConvexAuthProvider client={convex}>
         <BrowserRouter>
-          <RouteSyncer />
           <Routes>
-            <Route path="*" element={<NotFound />} />
             <Route path="/" element={<Landing />} />
-            <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/events" element={<Events />} />
-            <Route path="/event/:eventId" element={<EventInfo />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/event/:slug" element={<EventInfo />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
         <Toaster />
       </ConvexAuthProvider>
-    </InstrumentationProvider>
-  </StrictMode>,
+    </ConvexProvider>
+  </StrictMode>
 );
