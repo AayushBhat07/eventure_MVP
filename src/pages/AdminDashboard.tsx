@@ -133,7 +133,7 @@ function AdminDashboardContent() {
       </header>
 
       {/* Floating Navbar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
         <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={setActiveMenuItem} />
       </div>
 
