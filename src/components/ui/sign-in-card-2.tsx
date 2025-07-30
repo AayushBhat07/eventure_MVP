@@ -58,7 +58,12 @@ export function Component() {
 
   return (
     <div className="min-h-screen w-screen bg-black relative overflow-hidden flex items-center justify-center">
-      <Tiles className="absolute inset-0 z-0 opacity-[0.05]" tileSize="md" />
+      <Tiles
+        className="absolute inset-0 z-0 opacity-[0.05]"
+        rows={50}
+        cols={8}
+        tileSize="md"
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
