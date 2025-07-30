@@ -1,7 +1,7 @@
 import { HeroGeometric } from "@/components/ui/shape-landing-hero";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { Button } from "@/components/ui/button";
-import { StarBorder } from "@/components/ui/star-border";
+import { LiquidButton } from "@/components/ui/liquid-glass-button";
 
 export default function Landing() {
   return (
@@ -17,13 +17,12 @@ export default function Landing() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-xl font-bold tracking-tight text-white">EventHub</span>
-            <StarBorder 
-              className="text-sm"
-              color="rgba(255, 255, 255, 0.8)"
-              speed="4s"
+            <LiquidButton 
+              className="text-white text-sm"
+              size="sm"
             >
               Admin
-            </StarBorder>
+            </LiquidButton>
           </div>
           <AuthButton 
             trigger={
