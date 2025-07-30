@@ -7,6 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MenuBar } from '@/components/ui/glow-menu';
 import { ThemeProvider, useTheme } from 'next-themes';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { toast } from 'sonner';
+import { Id } from '@/convex/_generated/dataModel';
 
 // Dummy data
 const currentEvent = {
@@ -93,7 +97,13 @@ function AdminDashboardContent() {
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
   const [selectedVolunteers, setSelectedVolunteers] = useState<number[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  // Backend mutations and queries
+  const createEvent = useMutation(api.events.createEvent);
+  const events = useQuery(api.events.getAllEvents);
+  const upcomingEvents = useQuery(api.events.getUpcomingEvents);
 
   const toggleTodo = (id: number) => {
     setTodoList(prev => prev.map(todo => 
@@ -129,12 +139,39 @@ function AdminDashboardContent() {
     );
   };
 
-  const handleCreateEvent = (e: React.FormEvent) => {
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Selected volunteers:", selectedVolunteers);
-    setIsCreateEventOpen(false);
-    setSelectedVolunteers([]);
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const eventData = {
+      name: formData.get('eventName') as string,
+      description: formData.get('description') as string,
+      venue: formData.get('venue') as string,
+      eventDate: formData.get('eventDate') as string,
+      eventTime: formData.get('eventTime') as string,
+      maxParticipants: formData.get('maxParticipants') ? 
+        parseInt(formData.get('maxParticipants') as string) : undefined,
+      volunteerIds: selectedVolunteers.map(id => `user_${id}` as Id<"users">), // Convert to proper IDs
+    };
+
+    try {
+      const result = await createEvent(eventData);
+      
+      if (result.success) {
+        toast.success(result.message);
+        setIsCreateEventOpen(false);
+        setSelectedVolunteers([]);
+        (e.target as HTMLFormElement).reset();
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Event creation error:', error);
+      toast.error('Failed to create event. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -264,18 +301,22 @@ function AdminDashboardContent() {
                     <Label htmlFor="eventName" className="text-sm font-bold mb-2 block">EVENT NAME</Label>
                     <Input 
                       id="eventName"
+                      name="eventName"
                       className="border-2 border-black dark:border-white font-mono text-base p-3"
                       placeholder="Enter event name"
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
                     <Label htmlFor="venue" className="text-sm font-bold mb-2 block">VENUE</Label>
                     <Input 
                       id="venue"
+                      name="venue"
                       className="border-2 border-black dark:border-white font-mono text-base p-3"
                       placeholder="Enter venue"
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                 </div>
@@ -285,18 +326,22 @@ function AdminDashboardContent() {
                     <Label htmlFor="eventDate" className="text-sm font-bold mb-2 block">EVENT DATE</Label>
                     <Input 
                       id="eventDate"
+                      name="eventDate"
                       type="date"
                       className="border-2 border-black dark:border-white font-mono text-base p-3"
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
                     <Label htmlFor="eventTime" className="text-sm font-bold mb-2 block">START TIME</Label>
                     <Input 
                       id="eventTime"
+                      name="eventTime"
                       type="time"
                       className="border-2 border-black dark:border-white font-mono text-base p-3"
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                 </div>
@@ -305,10 +350,12 @@ function AdminDashboardContent() {
                   <Label htmlFor="maxParticipants" className="text-sm font-bold mb-2 block">MAX PARTICIPANTS</Label>
                   <Input 
                     id="maxParticipants"
+                    name="maxParticipants"
                     type="number"
                     className="border-2 border-black dark:border-white font-mono text-base p-3"
                     placeholder="Enter maximum participants"
                     min="1"
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -316,9 +363,11 @@ function AdminDashboardContent() {
                   <Label htmlFor="description" className="text-sm font-bold mb-2 block">DESCRIPTION</Label>
                   <Textarea 
                     id="description"
+                    name="description"
                     className="border-2 border-black dark:border-white font-mono text-base p-3 min-h-[100px]"
                     placeholder="Enter event description"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -332,6 +381,7 @@ function AdminDashboardContent() {
                             type="button"
                             onClick={() => toggleVolunteer(volunteer.id)}
                             className="flex-shrink-0"
+                            disabled={isSubmitting}
                           >
                             {selectedVolunteers.includes(volunteer.id) ? (
                               <CheckSquare className="h-5 w-5 text-black dark:text-white" />
@@ -360,8 +410,9 @@ function AdminDashboardContent() {
                   <Button 
                     type="submit"
                     className="flex-1 bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-base py-3 border-2 border-black dark:border-white"
+                    disabled={isSubmitting}
                   >
-                    CREATE EVENT
+                    {isSubmitting ? 'CREATING...' : 'CREATE EVENT'}
                   </Button>
                   <Button 
                     type="button"
@@ -371,6 +422,7 @@ function AdminDashboardContent() {
                       setSelectedVolunteers([]);
                     }}
                     className="flex-1 border-2 border-black dark:border-white font-mono text-base py-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    disabled={isSubmitting}
                   >
                     CANCEL
                   </Button>

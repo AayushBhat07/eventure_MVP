@@ -63,6 +63,16 @@ const schema = defineSchema(
       .index("by_start_date", ["startDate"])
       .index("by_status", ["status"]),
 
+    // Event volunteer assignments table
+    eventVolunteers: defineTable({
+      eventId: v.id("events"),
+      userId: v.id("users"),
+      assignedDate: v.number(), // timestamp
+      status: v.union(v.literal("assigned"), v.literal("confirmed"), v.literal("declined")),
+    }).index("by_event", ["eventId"])
+      .index("by_user", ["userId"])
+      .index("by_event_and_user", ["eventId", "userId"]),
+
     // Event registrations table
     eventRegistrations: defineTable({
       eventId: v.id("events"),
