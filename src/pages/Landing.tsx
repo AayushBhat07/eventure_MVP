@@ -2,6 +2,7 @@ import { HeroGeometric } from "@/components/ui/shape-landing-hero";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { Button } from "@/components/ui/button";
 import { LiquidButton } from "@/components/ui/liquid-glass-button";
+import { Link } from "react-router";
 
 export default function Landing() {
   return (
@@ -17,12 +18,14 @@ export default function Landing() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-xl font-bold tracking-tight text-white">EventHub</span>
-            <LiquidButton 
-              className="text-white text-sm"
-              size="sm"
-            >
-              Admin
-            </LiquidButton>
+            <Link to="/admin-signIn">
+              <LiquidButton 
+                className="text-white text-sm"
+                size="sm"
+              >
+                Admin
+              </LiquidButton>
+            </Link>
           </div>
           <AuthButton 
             trigger={

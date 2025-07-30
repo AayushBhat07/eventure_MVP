@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard.tsx";
 import Events from "./pages/Events.tsx";
 import Profile from "./pages/Profile.tsx";
 import EventInfo from "./pages/EventInfo.tsx";
+import AdminSignIn from "./pages/AdminSignIn.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -28,6 +29,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/events" element={<Events />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/event/:slug" element={<EventInfo />} />
+            <Route path="/admin-signIn" element={<AdminSignIn />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
