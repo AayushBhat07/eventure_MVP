@@ -50,56 +50,12 @@ function FloatingPaths({ position }: { position: number }) {
     );
 }
 
-export function BackgroundPaths({
-    title = "Background Paths",
-}: {
-    title?: string;
-}) {
-    const words = title.split(" ");
-
+export function BackgroundPaths() {
     return (
         <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-white dark:bg-neutral-950">
             <div className="absolute inset-0">
                 <FloatingPaths position={1} />
                 <FloatingPaths position={-1} />
-            </div>
-
-            {/* Title positioned above navbar */}
-            <div className="absolute top-20 sm:top-24 left-1/2 -translate-x-1/2 z-40">
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, delay: 0.5 }}
-                    className="text-center"
-                >
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter">
-                        {words.map((word, wordIndex) => (
-                            <span
-                                key={wordIndex}
-                                className="inline-block mr-3 last:mr-0"
-                            >
-                                {word.split("").map((letter, letterIndex) => (
-                                    <motion.span
-                                        key={`${wordIndex}-${letterIndex}`}
-                                        initial={{ y: 50, opacity: 0 }}
-                                        animate={{ y: 0, opacity: 1 }}
-                                        transition={{
-                                            delay: 0.7 + wordIndex * 0.1 + letterIndex * 0.03,
-                                            type: "spring",
-                                            stiffness: 150,
-                                            damping: 25,
-                                        }}
-                                        className="inline-block text-transparent bg-clip-text 
-                                        bg-gradient-to-r from-neutral-900 to-neutral-700/80 
-                                        dark:from-white dark:to-white/80"
-                                    >
-                                        {letter}
-                                    </motion.span>
-                                ))}
-                            </span>
-                        ))}
-                    </h1>
-                </motion.div>
             </div>
         </div>
     );
