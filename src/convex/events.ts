@@ -259,3 +259,65 @@ export const getEventVolunteers = query({
     return volunteersWithDetails;
   },
 });
+
+export const getCurrentOngoingEvent = query({
+  args: {},
+  returns: v.union(
+    v.null(),
+    v.object({
+      _id: v.id("events"),
+      _creationTime: v.number(),
+      name: v.string(),
+      description: v.string(),
+      venue: v.string(),
+      startDate: v.number(),
+      endDate: v.number(),
+      maxParticipants: v.optional(v.number()),
+      createdBy: v.union(v.id("users"), v.id("admins")),
+      status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
+    })
+  ),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const ongoingEvent = await ctx.db
+      .query("events")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .filter((q) => q.and(
+        q.lte(q.field("startDate"), now),
+        q.gte(q.field("endDate"), now)
+      ))
+      .first();
+    
+    return ongoingEvent;
+  },
+});
+
+export const getNextUpcomingEvent = query({
+  args: {},
+  returns: v.union(
+    v.null(),
+    v.object({
+      _id: v.id("events"),
+      _creationTime: v.number(),
+      name: v.string(),
+      description: v.string(),
+      venue: v.string(),
+      startDate: v.number(),
+      endDate: v.number(),
+      maxParticipants: v.optional(v.number()),
+      createdBy: v.union(v.id("users"), v.id("admins")),
+      status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
+    })
+  ),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const upcomingEvent = await ctx.db
+      .query("events")
+      .withIndex("by_status", (q) => q.eq("status", "active"))
+      .filter((q) => q.gt(q.field("startDate"), now))
+      .order("asc")
+      .first();
+    
+    return upcomingEvent;
+  },
+});
