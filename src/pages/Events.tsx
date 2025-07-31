@@ -14,7 +14,9 @@ import {
   CircleDot,
   Flag
 } from "lucide-react";
-import { Id } from "@/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Loader2 } from "lucide-react";
 
 export default function Events() {
   const navItems = [
@@ -25,128 +27,62 @@ export default function Events() {
     { name: 'Settings', url: '/settings', icon: Settings }
   ];
 
-  const events = [
-    {
-      id: 1,
-      eventId: "1" as Id<"events">,
-      sport: "Cycling",
-      title: "INTER-COLLEGE CYCLING CHAMPIONSHIP",
-      date: "Dec 15, 2024",
-      time: "8:00 AM",
-      venue: "Sports Complex Track",
-      icon: Bike
-    },
-    {
-      id: 2,
-      eventId: "2" as Id<"events">,
-      sport: "Basketball",
-      title: "ANNUAL BASKETBALL TOURNAMENT",
-      date: "Dec 16, 2024",
-      time: "10:00 AM",
-      venue: "Main Basketball Court",
-      icon: Circle
-    },
-    {
-      id: 3,
-      eventId: "3" as Id<"events">,
-      sport: "Fencing",
-      title: "COLLEGIATE FENCING CHAMPIONSHIP",
-      date: "Dec 17, 2024",
-      time: "2:00 PM",
-      venue: "Indoor Sports Hall",
-      icon: Sword
-    },
-    {
-      id: 4,
-      eventId: "4" as Id<"events">,
-      sport: "Badminton",
-      title: "BADMINTON SINGLES & DOUBLES",
-      date: "Dec 18, 2024",
-      time: "9:00 AM",
-      venue: "Badminton Courts 1-4",
-      icon: Zap
-    },
-    {
-      id: 5,
-      eventId: "5" as Id<"events">,
-      sport: "Table Tennis",
-      title: "PING PONG CHAMPIONSHIP",
-      date: "Dec 19, 2024",
-      time: "11:00 AM",
-      venue: "Recreation Center",
-      icon: Target
-    },
-    {
-      id: 6,
-      eventId: "6" as Id<"events">,
-      sport: "Tennis",
-      title: "TENNIS OPEN TOURNAMENT",
-      date: "Dec 20, 2024",
-      time: "7:00 AM",
-      venue: "Tennis Courts A-D",
-      icon: Circle
-    },
-    {
-      id: 7,
-      eventId: "7" as Id<"events">,
-      sport: "Cricket",
-      title: "INTER-DEPARTMENT CRICKET LEAGUE",
-      date: "Dec 21, 2024",
-      time: "1:00 PM",
-      venue: "Cricket Ground",
-      icon: Target
-    },
-    {
-      id: 8,
-      eventId: "8" as Id<"events">,
-      sport: "Athletics",
-      title: "TRACK & FIELD CHAMPIONSHIP",
-      date: "Dec 22, 2024",
-      time: "6:00 AM",
-      venue: "Athletic Stadium",
-      icon: Crown
-    },
-    {
-      id: 9,
-      eventId: "9" as Id<"events">,
-      sport: "Carrom",
-      title: "CARROM BOARD COMPETITION",
-      date: "Dec 23, 2024",
-      time: "3:00 PM",
-      venue: "Student Activity Center",
-      icon: Target
-    },
-    {
-      id: 10,
-      eventId: "10" as Id<"events">,
-      sport: "Chess",
-      title: "STRATEGIC CHESS TOURNAMENT",
-      date: "Dec 24, 2024",
-      time: "10:00 AM",
-      venue: "Library Conference Room",
-      icon: Gamepad2
-    },
-    {
-      id: 11,
-      eventId: "11" as Id<"events">,
-      sport: "Football",
-      title: "FOOTBALL CHAMPIONSHIP CUP",
-      date: "Dec 25, 2024",
-      time: "4:00 PM",
-      venue: "Main Football Field",
-      icon: CircleDot
-    },
-    {
-      id: 12,
-      eventId: "12" as Id<"events">,
-      sport: "Golf",
-      title: "COLLEGIATE GOLF TOURNAMENT",
-      date: "Dec 26, 2024",
-      time: "8:00 AM",
-      venue: "University Golf Course",
-      icon: Flag
-    }
-  ];
+  // Fetch events from database
+  const events = useQuery(api.events.getAllEvents);
+
+  // Icon mapping for different sports/event types
+  const getEventIcon = (eventName: string) => {
+    const name = eventName.toLowerCase();
+    if (name.includes('cycling') || name.includes('bike')) return Bike;
+    if (name.includes('basketball')) return Circle;
+    if (name.includes('fencing')) return Sword;
+    if (name.includes('badminton')) return Zap;
+    if (name.includes('table tennis') || name.includes('ping pong')) return Target;
+    if (name.includes('tennis')) return Circle;
+    if (name.includes('cricket')) return Target;
+    if (name.includes('athletics') || name.includes('track')) return Crown;
+    if (name.includes('carrom')) return Target;
+    if (name.includes('chess')) return Gamepad2;
+    if (name.includes('football')) return CircleDot;
+    if (name.includes('golf')) return Flag;
+    // Default icon for other events
+    return Calendar;
+  };
+
+  // Format date and time for display
+  const formatEventDateTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const eventDate = date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+    const eventTime = date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    return { eventDate, eventTime };
+  };
+
+  // Generate sport category from event name
+  const getSportCategory = (eventName: string) => {
+    const name = eventName.toLowerCase();
+    if (name.includes('cycling')) return 'Cycling';
+    if (name.includes('basketball')) return 'Basketball';
+    if (name.includes('fencing')) return 'Fencing';
+    if (name.includes('badminton')) return 'Badminton';
+    if (name.includes('table tennis') || name.includes('ping pong')) return 'Table Tennis';
+    if (name.includes('tennis')) return 'Tennis';
+    if (name.includes('cricket')) return 'Cricket';
+    if (name.includes('athletics') || name.includes('track')) return 'Athletics';
+    if (name.includes('carrom')) return 'Carrom';
+    if (name.includes('chess')) return 'Chess';
+    if (name.includes('football')) return 'Football';
+    if (name.includes('golf')) return 'Golf';
+    // Extract first word as category for other events
+    return eventName.split(' ')[0];
+  };
 
   return (
     <Protected>
@@ -167,18 +103,42 @@ export default function Events() {
       </div>
 
       <div className="pt-48 flex flex-wrap justify-center gap-6">
-        {events.map((event) => (
-          <BrutalistSportsCard
-            key={event.id}
-            sport={event.sport}
-            title={event.title}
-            date={event.date}
-            time={event.time}
-            venue={event.venue}
-            icon={event.icon}
-            eventId={event.eventId}
-          />
-        ))}
+        {/* Loading state */}
+        {events === undefined && (
+          <div className="flex items-center justify-center w-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-lg font-mono">Loading events...</span>
+          </div>
+        )}
+
+        {/* No events state */}
+        {events && events.length === 0 && (
+          <div className="flex flex-col items-center justify-center w-full text-center">
+            <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold mb-2">No Events Found</h2>
+            <p className="text-muted-foreground">Events created from the admin dashboard will appear here.</p>
+          </div>
+        )}
+
+        {/* Display events from database */}
+        {events && events.length > 0 && events.map((event) => {
+          const { eventDate, eventTime } = formatEventDateTime(event.startDate);
+          const sport = getSportCategory(event.name);
+          const EventIcon = getEventIcon(event.name);
+
+          return (
+            <BrutalistSportsCard
+              key={event._id}
+              sport={sport}
+              title={event.name}
+              date={eventDate}
+              time={eventTime}
+              venue={event.venue}
+              icon={EventIcon}
+              eventId={event._id}
+            />
+          );
+        })}
       </div>
     </Protected>
   );

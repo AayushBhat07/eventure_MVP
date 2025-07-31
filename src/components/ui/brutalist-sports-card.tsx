@@ -28,7 +28,8 @@ export const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({
   const navigate = useNavigate();
 
   const handleRegisterClick = () => {
-    navigate(`/event/${sport.toLowerCase()}`);
+    // Navigate to event details page with the actual event ID
+    navigate(`/event/${eventId}`);
   };
 
   return (
