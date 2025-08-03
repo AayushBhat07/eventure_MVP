@@ -17,6 +17,7 @@ import EventInfo from "./pages/EventInfo.tsx";
 import AdminSignIn from "./pages/AdminSignIn.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import AdminEvents from "./pages/AdminEvents.tsx";
+import AdminTeam from "./pages/AdminTeam.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -54,6 +55,10 @@ const router = createBrowserRouter([
   {
     path: "/admin-events",
     element: <AdminEvents />,
+  },
+  {
+    path: "/admin-team",
+    element: <AdminTeam />,
   },
   {
     path: "/auth",

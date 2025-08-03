@@ -131,3 +131,26 @@ export const listAdmins = query({
     }));
   },
 });
+
+export const getAllAdminsWithEvents = query({
+  handler: async (ctx) => {
+    const admins = await ctx.db.query("admins").collect();
+
+    const adminsWithEvents = await Promise.all(
+      admins.map(async (admin) => {
+        // Get events created by this admin
+        const createdEvents = await ctx.db
+          .query("events")
+          .withIndex("by_creator", (q) => q.eq("createdBy", admin._id))
+          .collect();
+
+        return {
+          ...admin,
+          events: createdEvents,
+        };
+      })
+    );
+
+    return adminsWithEvents;
+  },
+});
