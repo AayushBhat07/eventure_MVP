@@ -20,7 +20,6 @@ import type * as dashboard from "../dashboard.js";
 import type * as events from "../events.js";
 import type * as generators_createAdminUser from "../generators/createAdminUser.js";
 import type * as generators_createSampleData from "../generators/createSampleData.js";
-import type * as googleSheets from "../googleSheets.js";
 import type * as http from "../http.js";
 import type * as users from "../users.js";
 
@@ -40,7 +39,6 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   "generators/createAdminUser": typeof generators_createAdminUser;
   "generators/createSampleData": typeof generators_createSampleData;
-  googleSheets: typeof googleSheets;
   http: typeof http;
   users: typeof users;
 }>;
