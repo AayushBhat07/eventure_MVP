@@ -593,7 +593,7 @@ function AdminEventsContent() {
 
         {/* Info Modal */}
         <Dialog open={infoModalOpen} onOpenChange={setInfoModalOpen}>
-          <DialogContent className="max-w-[98vw] w-[98vw] max-h-[95vh] h-[95vh] overflow-y-auto border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] flex flex-col">
+          <DialogContent className="max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl w-full max-h-[95vh] h-[95vh] overflow-y-auto border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-2xl font-black tracking-tighter">
                 PARTICIPANT INFORMATION
