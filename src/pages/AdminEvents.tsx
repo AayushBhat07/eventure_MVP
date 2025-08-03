@@ -74,6 +74,8 @@ function AdminEventsContent() {
     selectedEvent ? { eventId: selectedEvent._id } : "skip"
   );
 
+  const participantsLoading = participants === undefined && selectedEvent !== null;
+
   const toggleVolunteer = (volunteerId: Id<"users">) => {
     setSelectedVolunteers(prev =>
       prev.includes(volunteerId)
@@ -241,6 +243,59 @@ function AdminEventsContent() {
       link.click();
       document.body.removeChild(link);
       toast.success("Exported as CSV!");
+    }
+  };
+
+  const handleParticipantExport = (format: "pdf" | "xlsx" | "csv") => {
+    if (!participants || participants.length === 0) {
+      toast.error("No participants to export.");
+      return;
+    }
+
+    const data = participants.map(participant => ({
+      name: participant.name || 'N/A',
+      rollNo: participant.rollNo || 'N/A',
+      branch: participant.branch || 'N/A',
+      mobileNumber: participant.mobileNumber || 'N/A',
+      email: participant.email || 'N/A',
+      paymentStatus: participant.paymentStatus,
+      registrationDate: new Date(participant.registrationDate).toLocaleDateString(),
+    }));
+
+    const eventName = selectedEvent?.name || 'Event';
+    const fileName = `${eventName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_participants`;
+
+    if (format === "pdf") {
+      const doc = new jsPDF();
+      doc.text(`${eventName} - Participants`, 14, 16);
+      (doc as any).autoTable({
+        head: [['Name', 'Roll No', 'Branch', 'Mobile Number', 'Email', 'Payment Status', 'Registration Date']],
+        body: data.map(Object.values),
+        startY: 25,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [0, 0, 0] },
+      });
+      doc.save(`${fileName}.pdf`);
+      toast.success("Participants exported as PDF!");
+    } else if (format === "xlsx") {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Participants");
+      XLSX.writeFile(workbook, `${fileName}.xlsx`);
+      toast.success("Participants exported as Excel!");
+    } else if (format === "csv") {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const csv = XLSX.utils.sheet_to_csv(worksheet);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${fileName}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Participants exported as CSV!");
     }
   };
 
@@ -585,84 +640,88 @@ function AdminEventsContent() {
           <Dialog open={infoModalOpen} onOpenChange={setInfoModalOpen}>
             <DialogContent className="min-w-[1200px] max-w-[95vw] w-auto max-h-[90vh] overflow-y-auto bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-bold tracking-tight">EVENT PARTICIPANTS</DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground mt-2">
-                  {selectedEvent.name} - Registered participants and their details
-                </DialogDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <DialogTitle className="text-2xl font-bold tracking-tight">EVENT PARTICIPANTS</DialogTitle>
+                    <DialogDescription className="text-sm text-muted-foreground mt-2">
+                      {selectedEvent.name} - Registered participants and their details
+                    </DialogDescription>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-sm px-4 py-2 border-2 border-black dark:border-white"
+                        size="sm"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        EXPORT
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuItem onClick={() => handleParticipantExport('pdf')}>
+                        📄 Export as PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleParticipantExport('xlsx')}>
+                        📊 Export as Excel (.xlsx)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleParticipantExport('csv')}>
+                        📑 Export as CSV (.csv)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </DialogHeader>
-              
+
               <div className="mt-6">
-                {!participants ? (
+                {participantsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin" />
-                    <span className="ml-2">Loading participants...</span>
+                    <span className="ml-2 text-lg font-bold">LOADING PARTICIPANTS...</span>
                   </div>
-                ) : participants.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-lg font-medium text-muted-foreground">
-                      No participants registered for this event yet.
-                    </p>
-                  </div>
-                ) : (
+                ) : participants && participants.length > 0 ? (
                   <div className="border-2 border-black dark:border-white">
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent border-b-2 border-black dark:border-white">
-                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Name</TableHead>
-                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Roll No</TableHead>
-                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Branch</TableHead>
-                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Mobile Number</TableHead>
-                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Email Address</TableHead>
-                          <TableHead className="font-bold text-foreground border-r-2 border-black dark:border-white">Payment Status</TableHead>
-                          <TableHead className="font-bold text-foreground">Registration Date</TableHead>
+                          <TableHead className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">NAME</TableHead>
+                          <TableHead className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">ROLL NO</TableHead>
+                          <TableHead className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">BRANCH</TableHead>
+                          <TableHead className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">MOBILE NUMBER</TableHead>
+                          <TableHead className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">EMAIL ADDRESS</TableHead>
+                          <TableHead className="font-bold text-black dark:text-white border-r-2 border-black dark:border-white">PAYMENT STATUS</TableHead>
+                          <TableHead className="font-bold text-black dark:text-white">REGISTRATION DATE</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {participants.map((participant) => (
-                          <TableRow key={participant._id} className="border-b border-black dark:border-white">
-                            <TableCell className="font-medium border-r border-black dark:border-white">
-                              {participant.name || 'N/A'}
-                            </TableCell>
-                            <TableCell className="border-r border-black dark:border-white">
-                              {participant.rollNo || 'N/A'}
-                            </TableCell>
-                            <TableCell className="border-r border-black dark:border-white">
-                              {participant.branch || 'N/A'}
-                            </TableCell>
-                            <TableCell className="border-r border-black dark:border-white">
-                              {participant.mobileNumber || 'N/A'}
-                            </TableCell>
-                            <TableCell className="border-r border-black dark:border-white">
-                              {participant.email || 'N/A'}
-                            </TableCell>
-                            <TableCell className="border-r border-black dark:border-white">
-                              <span className={`px-2 py-1 text-xs font-bold rounded ${
+                          <TableRow key={participant._id} className="border-b-2 border-black dark:border-white">
+                            <TableCell className="font-medium border-r-2 border-black dark:border-white">{participant.name || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.rollNo || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.branch || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.mobileNumber || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">{participant.email || 'N/A'}</TableCell>
+                            <TableCell className="border-r-2 border-black dark:border-white">
+                              <span className={`px-2 py-1 text-xs font-bold border-2 ${
                                 participant.paymentStatus === 'Completed' 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                  ? 'bg-green-400 text-black border-black' 
+                                  : 'bg-yellow-400 text-black border-black'
                               }`}>
                                 {participant.paymentStatus}
                               </span>
                             </TableCell>
-                            <TableCell>
-                              {new Date(participant.registrationDate).toLocaleDateString()}
-                            </TableCell>
+                            <TableCell>{new Date(participant.registrationDate).toLocaleDateString()}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
+                ) : (
+                  <div className="text-center py-8 border-2 border-black dark:border-white bg-gray-100 dark:bg-gray-800">
+                    <p className="text-lg font-bold">NO PARTICIPANTS REGISTERED</p>
+                    <p className="text-sm text-muted-foreground mt-2">This event has no registered participants yet.</p>
+                  </div>
                 )}
               </div>
-
-              <DialogFooter className="mt-6">
-                <Button 
-                  onClick={() => setInfoModalOpen(false)}
-                  className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-base py-3 border-2 border-black dark:border-white"
-                >
-                  CLOSE
-                </Button>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         )}
