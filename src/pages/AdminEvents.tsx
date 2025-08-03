@@ -39,6 +39,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { FileText } from 'lucide-react';
 
 import { internal } from "@/convex/_generated/api";
 
@@ -67,6 +70,7 @@ function AdminEventsContent() {
   const [participants, setParticipants] = useState<any[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   // Fetch all events and users from the database
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
@@ -237,6 +241,97 @@ function AdminEventsContent() {
       console.error(error);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportToPDF = async () => {
+    if (!selectedEvent || !getEventParticipants) return;
+    
+    setIsExportingPDF(true);
+    try {
+      // Create new PDF document
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Participant List - ${selectedEvent.name}`, 20, 25);
+      
+      // Add date
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      doc.text(`Generated on: ${currentDate}`, 20, 35);
+      
+      // Prepare table data
+      const tableHeaders = [
+        'Name',
+        'Roll Number',
+        'Branch', 
+        'Phone Number',
+        'Email Address',
+        'Payment Status',
+        'Registration Date'
+      ];
+      
+      const tableData = getEventParticipants.map(participant => [
+        participant.name || 'N/A',
+        participant.rollNo || 'N/A',
+        participant.branch || 'N/A',
+        participant.mobileNumber || 'N/A',
+        participant.email || 'N/A',
+        participant.paymentStatus,
+        new Date(participant.registrationDate).toLocaleDateString()
+      ]);
+
+      // Add table using autoTable
+      autoTable(doc, {
+        head: [tableHeaders],
+        body: tableData,
+        startY: 45,
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          font: 'helvetica'
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        margin: { top: 45, left: 20, right: 20 },
+        columnStyles: {
+          0: { cellWidth: 25 }, // Name
+          1: { cellWidth: 20 }, // Roll Number
+          2: { cellWidth: 25 }, // Branch
+          3: { cellWidth: 25 }, // Phone Number
+          4: { cellWidth: 35 }, // Email Address
+          5: { cellWidth: 20 }, // Payment Status
+          6: { cellWidth: 25 }  // Registration Date
+        }
+      });
+
+      // Generate filename
+      const eventName = selectedEvent.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const dateString = new Date().toISOString().split('T')[0];
+      const filename = `participant_list_${eventName}_${dateString}.pdf`;
+
+      // Save the PDF
+      doc.save(filename);
+
+      toast.success("✅ Participant data exported as PDF.");
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error("❌ PDF export failed. Please try again.");
+    } finally {
+      setIsExportingPDF(false);
     }
   };
 
@@ -714,10 +809,10 @@ function AdminEventsContent() {
                   <Button
                     variant="outline"
                     className="border-2 border-black dark:border-white font-bold"
-                    disabled={isExporting || isExportingExcel}
+                    disabled={isExporting || isExportingExcel || isExportingPDF}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    {(isExporting || isExportingExcel) ? "Exporting..." : "EXPORT"}
+                    {(isExporting || isExportingExcel || isExportingPDF) ? "Exporting..." : "EXPORT"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
@@ -729,6 +824,10 @@ function AdminEventsContent() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportToExcel} disabled={isExportingExcel}>
                     Export as Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportToPDF} disabled={isExportingPDF}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export as PDF
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
