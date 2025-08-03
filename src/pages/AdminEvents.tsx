@@ -501,7 +501,7 @@ function AdminEventsContent() {
         {/* Info Modal with Participants Table */}
         {selectedEvent && (
           <Dialog open={infoModalOpen} onOpenChange={setInfoModalOpen}>
-            <DialogContent className="max-w-[95vw] w-full max-h-[90vh] overflow-y-auto bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
+            <DialogContent className="w-fit min-w-[800px] max-w-[90vw] max-h-[90vh] overflow-y-auto bg-white dark:bg-black border-2 border-black dark:border-white font-mono">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold tracking-tight">EVENT PARTICIPANTS</DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground mt-2">
