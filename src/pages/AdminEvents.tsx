@@ -16,6 +16,7 @@ import {
   Info,
   X,
   Save,
+  Download,
 } from 'lucide-react';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ThemeProvider, useTheme } from 'next-themes';
@@ -31,6 +32,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
 import { ContributorsOverviewTable } from '@/components/ui/contributors-overview-table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EventData {
   _id: Id<"events">;
@@ -586,8 +593,8 @@ function AdminEventsContent() {
 
         {/* Info Modal */}
         <Dialog open={infoModalOpen} onOpenChange={setInfoModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
-            <DialogHeader>
+          <DialogContent className="max-w-[95vw] w-[95vw] max-h-[90vh] h-[90vh] overflow-y-auto border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-2xl font-black tracking-tighter">
                 PARTICIPANT INFORMATION
               </DialogTitle>
@@ -598,24 +605,48 @@ function AdminEventsContent() {
               )}
             </DialogHeader>
             
-            {getEventParticipants === undefined && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
-                <span className="text-lg font-mono">Loading participants...</span>
-              </div>
-            )}
+            <div className="flex-grow overflow-y-auto">
+              {getEventParticipants === undefined && (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
+                  <span className="text-lg font-mono">Loading participants...</span>
+                </div>
+              )}
 
-            {getEventParticipants && getEventParticipants.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No participants have registered for this event yet.</p>
-              </div>
-            )}
+              {getEventParticipants && getEventParticipants.length === 0 && (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No participants have registered for this event yet.</p>
+                </div>
+              )}
 
-            {getEventParticipants && getEventParticipants.length > 0 && (
-              <ContributorsOverviewTable participants={getEventParticipants} />
-            )}
+              {getEventParticipants && getEventParticipants.length > 0 && (
+                <ContributorsOverviewTable participants={getEventParticipants} />
+              )}
+            </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-shrink-0 mt-4 flex sm:justify-between items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-2 border-black dark:border-white font-bold"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    EXPORT
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => alert("Placeholder: Export to Google Sheets")}>
+                    Export to Google Sheets
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => alert("Placeholder: Export as CSV")}>
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => alert("Placeholder: Export as Excel")}>
+                    Export as Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 type="button"
                 variant="outline"
