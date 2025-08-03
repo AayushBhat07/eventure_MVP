@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ThemeProvider, useTheme } from 'next-themes';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import { internal } from "@/convex/_generated/api";
 
 interface EventData {
   _id: Id<"events">;
@@ -62,6 +64,7 @@ function AdminEventsContent() {
   const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch all events and users from the database
   const allEvents = useQuery(api.events.getAllEventsWithDetails);
@@ -75,6 +78,8 @@ function AdminEventsContent() {
     api.events.getEventParticipants,
     selectedEvent ? { eventId: selectedEvent._id } : "skip"
   );
+
+  const exportToSheets = useAction(internal.googleSheets.exportToGoogleSheets);
 
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, label: "Dashboard", href: "/admin-dashboard", gradient: "from-blue-500 to-purple-600", iconColor: "text-blue-400" },
@@ -215,6 +220,21 @@ function AdminEventsContent() {
       console.error("Delete event error:", error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleExportToSheets = async () => {
+    if (!selectedEvent) return;
+    setIsExporting(true);
+    try {
+      const url = await exportToSheets({ eventId: selectedEvent._id });
+      toast.success("Successfully exported to Google Sheets!");
+      window.open(url, "_blank");
+    } catch (error) {
+      toast.error("Failed to export to Google Sheets.");
+      console.error(error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -630,13 +650,14 @@ function AdminEventsContent() {
                   <Button
                     variant="outline"
                     className="border-2 border-black dark:border-white font-bold"
+                    disabled={isExporting}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    EXPORT
+                    {isExporting ? "Exporting..." : "EXPORT"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => alert("Placeholder: Export to Google Sheets")}>
+                  <DropdownMenuItem onClick={handleExportToSheets}>
                     Export to Google Sheets
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => alert("Placeholder: Export as CSV")}>

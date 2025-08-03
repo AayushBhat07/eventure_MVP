@@ -550,3 +550,24 @@ export const getEventParticipants = query({
     return participants;
   },
 });
+
+// Get a single event by ID
+export const getEventById = query({
+  args: {
+    eventId: v.id("events"),
+  },
+  returns: v.union(v.null(), v.object({
+    _id: v.id("events"),
+    name: v.string(),
+    description: v.string(),
+    venue: v.string(),
+    startDate: v.number(),
+    endDate: v.number(),
+    maxParticipants: v.optional(v.number()),
+    createdBy: v.union(v.id("users"), v.id("admins")),
+    status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
+  })),
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.eventId);
+  },
+});
