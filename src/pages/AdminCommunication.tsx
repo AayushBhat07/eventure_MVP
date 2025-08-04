@@ -13,6 +13,7 @@ import MessageWithReadReceipt from "@/components/ui/MessageWithReadReceipt";
 import { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
 import EmojiPicker from 'emoji-picker-react';
+import AvatarDock from "@/components/ui/avatar-dock";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -39,6 +40,7 @@ function AdminCommunicationContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isPosting, setIsPosting] = useState(false);
 
   // Fetch data
   const messages = useQuery(api.communication.getMessages);
@@ -158,41 +160,25 @@ function AdminCommunicationContent() {
   };
 
   const handleSendMessage = async () => {
-    if (!messageText.trim() && attachments.length === 0) {
-      toast.error("Please enter a message or attach a file");
-      return;
-    }
-
-    if (!adminUser || adminUser.role !== "admin") {
-      toast.error("Only admins can post messages");
-      return;
-    }
-
+    if (!canSend) return;
+    setIsPosting(true);
     try {
-      // For now, we'll simulate file upload URLs
-      // In a real implementation, you'd upload files to storage first
-      const attachmentData = attachments.map(attachment => ({
-        url: attachment.url, // This would be the uploaded file URL
-        name: attachment.name,
-        type: attachment.type
-      }));
-
       const result = await postMessage({
-        messageText: messageText.trim(),
-        attachments: attachmentData,
+        messageText,
+        attachments,
       });
 
       if (result && result.success) {
         toast.success("Message posted successfully!");
         setMessageText("");
         setAttachments([]);
-        setAttachments([]);
-        setShowEmojiPicker(false);
       } else {
         toast.error(result?.message || "Failed to post message");
       }
     } catch (error) {
-      toast.error("Failed to send message. Please try again.");
+      toast.error("An unexpected error occurred.");
+    } finally {
+      setIsPosting(false);
     }
   };
 
@@ -216,7 +202,7 @@ function AdminCommunicationContent() {
     }).toUpperCase();
   };
 
-  const canSendMessage = messageText.trim().length > 0 || attachments.length > 0;
+  const canSend = messageText.trim().length > 0 || attachments.length > 0;
   const isAdmin = adminUser?.role === "admin";
 
   return (
@@ -234,7 +220,7 @@ function AdminCommunicationContent() {
             <div className="flex items-center gap-4 md:gap-6">
               <div className="text-right hidden md:block">
                 <div className="text-sm font-bold">{getCurrentDate()}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">ANNOUNCEMENT CHANNEL</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
                 {adminUser?.name?.charAt(0) || 'A'}
@@ -251,150 +237,142 @@ function AdminCommunicationContent() {
           <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
 
-        {/* Messages Feed */}
-        <div className="flex flex-col h-[calc(100vh-120px)] pt-16">
-          <div className="flex-1 overflow-y-auto p-4 pb-32">
-            <div className="max-w-4xl mx-auto space-y-4">
-              {messages === undefined ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black dark:border-white mx-auto"></div>
-                  <p className="text-lg font-bold mt-4">LOADING MESSAGES...</p>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="text-center py-12">
-                  <h2 className="text-2xl font-bold text-gray-600 mb-2">NO MESSAGES YET</h2>
-                  <p className="text-gray-500">Admins can start the conversation.</p>
-                </div>
-              ) : (
-                messages.map((message) => (
-                  <MessageWithReadReceipt
-                    key={message._id}
-                    message={message}
-                    onEmojiReaction={handleEmojiReaction}
-                  />
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+        {/* Main Content Container with right padding for avatar dock */}
+        <div className="container mx-auto px-4 py-8 pt-24 pr-20">
+          {/* Messages Display */}
+          <div className="space-y-6 mb-8">
+            {messages === undefined ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black dark:border-white mx-auto"></div>
+                <p className="text-lg font-bold mt-4">LOADING MESSAGES...</p>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-600 mb-2">NO MESSAGES</h2>
+                <p className="text-gray-500">Start the conversation by posting the first message.</p>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <MessageWithReadReceipt
+                  key={message._id}
+                  message={message}
+                  onEmojiReaction={handleEmojiReaction}
+                />
+              ))
+            )}
           </div>
 
-          {/* Message Composer */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t-4 border-black dark:border-white p-4 z-40">
-            <div className="max-w-4xl mx-auto">
-              {!isAdmin ? (
-                <div className="bg-red-100 dark:bg-red-900/20 border-4 border-red-600 p-4 text-center">
-                  <p className="text-red-600 font-bold font-mono">ADMIN ACCESS REQUIRED TO POST MESSAGES</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Attachment Previews */}
-                  {attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {attachments.map((attachment, index) => (
-                        <div key={index} className="relative border-2 border-black dark:border-white p-2 bg-gray-50 dark:bg-gray-800">
-                          <button
-                            onClick={() => removeAttachment(index)}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                          
-                          {attachment.type === "image" && (
-                            <div className="flex items-center gap-2">
-                              <img src={attachment.url} alt={attachment.name} className="w-12 h-12 object-cover" />
-                              <span className="text-xs font-mono">{attachment.name}</span>
-                            </div>
-                          )}
-                          
-                          {attachment.type === "pdf" && (
-                            <div className="flex items-center gap-2">
-                              <FileText className="w-8 h-8 text-red-600" />
-                              <span className="text-xs font-mono">{attachment.name}</span>
-                            </div>
-                          )}
-                          
-                          {attachment.type === "video" && (
-                            <div className="flex items-center gap-2">
-                              <Play className="w-8 h-8 text-blue-600" />
-                              <span className="text-xs font-mono">{attachment.name}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+          {/* Enhanced Message Composer */}
+          {isAdmin && (
+            <div className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-6">
+              <h3 className="text-xl font-bold mb-4 font-mono tracking-tight uppercase">POST MESSAGE</h3>
+              
+              {/* Message Input */}
+              <div className="mb-4">
+                <textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Type your message here..."
+                  className="w-full h-32 p-3 border-2 border-black dark:border-white font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white bg-white dark:bg-black"
+                />
+              </div>
 
-                  {/* Emoji Picker */}
-                  {showEmojiPicker && (
-                    <div className="absolute bottom-20 right-4 z-50">
-                      <EmojiPicker onEmojiClick={handleEmojiSelect} />
-                    </div>
-                  )}
-
-                  {/* Input Row */}
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1 relative">
-                      <Textarea
-                        ref={textareaRef}
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        placeholder="Type your announcement..."
-                        className="min-h-[80px] max-h-[200px] resize-none border-4 border-black dark:border-white font-mono text-sm"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey && canSendMessage) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                      />
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={attachments.length >= 5}
-                        className="border-4 border-black dark:border-white h-12 w-12"
-                      >
-                        <Paperclip className="h-4 w-4" />
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        className="border-4 border-black dark:border-white h-12 w-12"
-                      >
-                        <Smile className="h-4 w-4" />
-                      </Button>
-
-                      <Button
-                        onClick={handleSendMessage}
-                        disabled={!canSendMessage}
-                        className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-6 h-12 border-4 border-black dark:border-white"
-                      >
-                        <Send className="h-4 w-4 mr-2" />
-                        POST
-                      </Button>
-                    </div>
+              {/* Attachment Previews */}
+              {attachments.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-bold mb-2 font-mono">ATTACHMENTS ({attachments.length})</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {attachments.map((attachment, index) => (
+                      <div key={index} className="relative border-2 border-black dark:border-white p-2 bg-gray-50 dark:bg-gray-800">
+                        {attachment.type === 'image' ? (
+                          <img src={attachment.url} alt={attachment.name} className="w-full h-20 object-cover" />
+                        ) : (
+                          <div className="w-full h-20 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                            <FileText className="w-8 h-8 text-gray-600" />
+                          </div>
+                        )}
+                        <p className="text-xs font-mono mt-1 truncate">{attachment.name}</p>
+                        <button
+                          onClick={() => removeAttachment(index)}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold flex items-center justify-center border border-black dark:border-white"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
+                </div>
+              )}
 
-                  {/* Hidden File Input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".jpg,.jpeg,.png,.webp,.pdf,.mp4"
-                    onChange={handleFileSelect}
-                    className="hidden"
+              {/* Action Bar */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  {/* File Upload */}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,video/*,.pdf,.doc,.docx"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800 font-mono text-sm">
+                      {attachments.length < 5 ? (
+                        <>
+                          <Paperclip className="w-4 h-4" />
+                          ATTACH
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-sm font-bold">MAX 5 ATTACHMENTS</div>
+                        </>
+                      )}
+                    </div>
+                  </label>
+
+                  {/* Emoji Picker Toggle */}
+                  <button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800 font-mono text-sm"
+                  >
+                    😀 EMOJI
+                  </button>
+                </div>
+
+                {/* Send Button */}
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!canSend || isPosting}
+                  className={`px-6 py-2 font-mono text-sm font-bold border-2 border-black dark:border-white transition-colors ${
+                    canSend && !isPosting
+                      ? 'bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-400'
+                  }`}
+                >
+                  {isPosting ? 'POSTING...' : 'SEND MESSAGE'}
+                </button>
+              </div>
+
+              {/* Emoji Picker */}
+              {showEmojiPicker && (
+                <div className="mt-4 border-2 border-black dark:border-white">
+                  <EmojiPicker
+                    onEmojiClick={(emojiData) => {
+                      setMessageText(prev => prev + emojiData.emoji);
+                      setShowEmojiPicker(false);
+                    }}
                   />
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
+
+        {/* Avatar Dock */}
+        <AvatarDock onStartDM={(userId) => {
+          // TODO: Implement DM functionality
+          console.log('Start DM with user:', userId);
+        }} />
       </div>
     </div>
   );
