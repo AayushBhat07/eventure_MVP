@@ -8,12 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { MenuBar } from "@/components/ui/glow-menu";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ThemeProvider, useTheme } from 'next-themes';
-import { Home, Calendar, Users, Settings, Paperclip, Smile, Send, X, FileText, Image, Play } from "lucide-react";
-import MessageWithReadReceipt from "@/components/ui/MessageWithReadReceipt";
+import BrutalistDock from "@/components/ui/brutalist-dock";
 import { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
 import EmojiPicker from 'emoji-picker-react';
-import AvatarDock from "@/components/ui/avatar-dock";
+import { Home, Calendar, Users, Settings, FileText, Paperclip } from "lucide-react";
+import MessageWithReadReceipt from "@/components/ui/MessageWithReadReceipt";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -292,8 +292,8 @@ function AdminCommunicationContent() {
           <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
 
-        {/* Main Content Container - adjusted for avatar dock */}
-        <div className="container mx-auto px-4 py-8 pt-24 pr-24">
+        {/* Main Content Container - back to normal padding */}
+        <div className="container mx-auto px-4 py-8 pt-24 pb-24">
           {/* Messages Display */}
           <div className="space-y-6 mb-8">
             {messages === undefined ? (
@@ -425,8 +425,8 @@ function AdminCommunicationContent() {
           )}
         </div>
 
-        {/* Avatar Dock */}
-        <AvatarDock />
+        {/* Brutalist Dock */}
+        <BrutalistDock />
       </div>
     </div>
   );
