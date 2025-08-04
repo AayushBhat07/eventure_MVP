@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './button';
 import { Badge } from './badge';
-import { Phone, Mail, User, MessageCircle, Edit, MapPin } from 'lucide-react';
+import { Phone, Mail, User, MessageCircle, Calendar, MapPin } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -38,6 +38,28 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
       toast.error("No phone number available for messaging");
     }
   };
+
+  const handleShowEvents = () => {
+    if (member.volunteerEvents && member.volunteerEvents.length > 0) {
+      const eventsList = member.volunteerEvents.join(', ');
+      toast.success(`${member.name} is volunteering in: ${eventsList}`);
+    } else {
+      toast.info(`${member.name} is not currently volunteering in any events`);
+    }
+  };
+
+  const getVolunteerStatus = () => {
+    if (!member.volunteerEvents || member.volunteerEvents.length === 0) {
+      return { text: 'No Events', count: 0, color: 'bg-gray-500' };
+    }
+    return { 
+      text: `${member.volunteerEvents.length} Event${member.volunteerEvents.length > 1 ? 's' : ''}`, 
+      count: member.volunteerEvents.length,
+      color: 'bg-blue-500'
+    };
+  };
+
+  const volunteerStatus = getVolunteerStatus();
 
   return (
     <motion.div
@@ -142,13 +164,12 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2">
             <Button 
-              onClick={() => onEdit(member)}
-              className="flex-1 bg-white dark:bg-gray-700 border-2 border-black dark:border-white rounded-lg py-2 text-black dark:text-white font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-              variant="outline"
+              onClick={handleShowEvents}
+              className={`flex-1 ${volunteerStatus.color} border-2 border-black dark:border-white rounded-lg py-2 text-white font-semibold text-sm hover:opacity-90 transition-opacity`}
               size="sm"
             >
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
+              <Calendar className="h-4 w-4 mr-1" />
+              {volunteerStatus.text}
             </Button>
             <Button 
               onClick={handleMessage}
