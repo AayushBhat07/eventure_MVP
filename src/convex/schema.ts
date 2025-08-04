@@ -113,8 +113,11 @@ const schema = defineSchema({
     senderId: v.union(v.id("users"), v.id("admins")),
     senderName: v.string(),
     timestamp: v.number(),
-    attachmentUrl: v.optional(v.string()),
-    attachmentType: v.optional(v.union(v.literal("image"), v.literal("pdf"))),
+    attachments: v.array(v.object({
+      url: v.string(),
+      name: v.string(),
+      type: v.union(v.literal("image"), v.literal("pdf"), v.literal("video")),
+    })),
     emojiReactions: v.array(v.object({
       emoji: v.string(),
       userId: v.id("users"),

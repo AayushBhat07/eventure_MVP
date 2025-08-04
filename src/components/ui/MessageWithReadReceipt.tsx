@@ -4,18 +4,29 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { Button } from "@/components/ui/button";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Play, Image } from "lucide-react";
 
 interface Message {
   _id: Id<"admin_communication_messages">;
-  senderId: Id<"users">;
+  _creationTime: number;
+  messageText: string;
+  senderId: Id<"users"> | Id<"admins">;
   senderName: string;
   timestamp: number;
-  messageText: string;
-  attachmentUrl?: string;
-  attachmentType?: "image" | "pdf";
-  emojiReactions: Array<{ emoji: string; userId: Id<"users">; timestamp: number }>;
-  readBy: Array<{ userId: Id<"users">; readAt: number }>;
+  attachments: Array<{
+    url: string;
+    name: string;
+    type: "image" | "pdf" | "video";
+  }>;
+  emojiReactions: Array<{
+    emoji: string;
+    userId: Id<"users">;
+    timestamp: number;
+  }>;
+  readBy: Array<{
+    userId: Id<"users">;
+    readAt: number;
+  }>;
 }
 
 interface MessageWithReadReceiptProps {
@@ -83,6 +94,76 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({ message
   const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡'];
   const emojiCounts = getEmojiCounts(message.emojiReactions || []);
 
+  const renderAttachments = () => {
+    if (!message.attachments || message.attachments.length === 0) return null;
+
+    return (
+      <div className="mt-3 space-y-2">
+        {message.attachments.map((attachment, index) => (
+          <div key={index} className="border-2 border-black dark:border-white p-2">
+            {attachment.type === "image" && (
+              <div className="flex items-center gap-2">
+                <img 
+                  src={attachment.url} 
+                  alt={attachment.name}
+                  className="w-16 h-16 object-cover border-2 border-black dark:border-white"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-bold font-mono">{attachment.name}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(attachment.url, '_blank')}
+                    className="mt-1 text-xs border-2 border-black dark:border-white"
+                  >
+                    <Image className="w-3 h-3 mr-1" />
+                    VIEW
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {attachment.type === "pdf" && (
+              <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 p-2">
+                <FileText className="w-8 h-8 text-red-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold font-mono">{attachment.name}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(attachment.url, '_blank')}
+                    className="mt-1 text-xs border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    DOWNLOAD PDF
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {attachment.type === "video" && (
+              <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-2">
+                <Play className="w-8 h-8 text-blue-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold font-mono">{attachment.name}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(attachment.url, '_blank')}
+                    className="mt-1 text-xs border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
+                  >
+                    <Play className="w-3 h-3 mr-1" />
+                    PLAY VIDEO
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div
       ref={ref}
@@ -90,65 +171,32 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({ message
     >
       {/* Message Header */}
       <div className="flex justify-between items-start mb-3">
-        <div className="bg-black dark:bg-white text-white dark:text-black px-3 py-1 font-bold text-sm uppercase tracking-wide">
-          {message.senderName}
-        </div>
-        <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">
-          {formatTimestamp(message.timestamp)}
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-sm">
+            {message.senderName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <span className="font-bold text-sm font-mono tracking-tight uppercase">
+              {message.senderName}
+            </span>
+            <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+              {formatTimestamp(message.timestamp)}
+            </div>
+          </div>
         </div>
       </div>
       
       {/* Message Content */}
       {message.messageText && (
-        <div className="text-base leading-relaxed mb-3 font-mono">
-          {message.messageText}
+        <div className="mb-3">
+          <p className="text-sm font-mono leading-relaxed whitespace-pre-wrap">
+            {message.messageText}
+          </p>
         </div>
       )}
 
-      {/* Attachment Preview */}
-      {message.attachmentUrl && (
-        <div className="mt-3 border-4 border-gray-300 dark:border-gray-600 p-3">
-          {message.attachmentType === 'image' ? (
-            <img 
-              src={message.attachmentUrl} 
-              alt="Attachment" 
-              className="max-w-full h-auto max-h-64 object-contain border-2 border-black dark:border-white"
-            />
-          ) : message.attachmentType === 'pdf' ? (
-            <div className="flex items-center gap-3 p-3 bg-red-100 dark:bg-red-900 border-2 border-red-500">
-              <FileText className="h-8 w-8 text-red-600 dark:text-red-400" />
-              <div className="flex-1">
-                <div className="font-bold text-sm uppercase">PDF DOCUMENT</div>
-                <a 
-                  href={message.attachmentUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-red-600 dark:text-red-400 underline font-bold flex items-center gap-1 mt-1"
-                >
-                  <Download className="h-4 w-4" />
-                  DOWNLOAD PDF
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 border-2 border-gray-400">
-              <FileText className="h-8 w-8 text-gray-600 dark:text-gray-400" />
-              <div className="flex-1">
-                <div className="font-bold text-sm uppercase">FILE ATTACHMENT</div>
-                <a 
-                  href={message.attachmentUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 underline font-bold flex items-center gap-1 mt-1"
-                >
-                  <Download className="h-4 w-4" />
-                  DOWNLOAD FILE
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Attachments */}
+      {renderAttachments()}
 
       {/* Emoji Reactions */}
       <div className="mt-4 pt-3 border-t-2 border-gray-200 dark:border-gray-700">

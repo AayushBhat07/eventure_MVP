@@ -6,8 +6,11 @@ import { Id } from "./_generated/dataModel";
 export const postMessage = mutation({
   args: {
     messageText: v.string(),
-    attachmentUrl: v.optional(v.string()),
-    attachmentType: v.optional(v.union(v.literal("image"), v.literal("pdf"))),
+    attachments: v.array(v.object({
+      url: v.string(),
+      name: v.string(),
+      type: v.union(v.literal("image"), v.literal("pdf"), v.literal("video")),
+    })),
   },
   returns: v.object({
     success: v.boolean(),
@@ -30,10 +33,9 @@ export const postMessage = mutation({
         senderId: user._id,
         senderName: user.name || "Admin",
         timestamp: Date.now(),
-        attachmentUrl: args.attachmentUrl,
-        attachmentType: args.attachmentType,
+        attachments: args.attachments,
         emojiReactions: [],
-        readBy: [], // Add the required readBy field
+        readBy: [],
       });
 
       return { success: true, message: "Message posted successfully" };
@@ -53,8 +55,11 @@ export const getMessages = query({
     senderId: v.union(v.id("users"), v.id("admins")),
     senderName: v.string(),
     timestamp: v.number(),
-    attachmentUrl: v.optional(v.string()),
-    attachmentType: v.optional(v.union(v.literal("image"), v.literal("pdf"))),
+    attachments: v.array(v.object({
+      url: v.string(),
+      name: v.string(),
+      type: v.union(v.literal("image"), v.literal("pdf"), v.literal("video")),
+    })),
     emojiReactions: v.array(v.object({
       emoji: v.string(),
       userId: v.id("users"),
