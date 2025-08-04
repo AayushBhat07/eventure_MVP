@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MenuBar } from "@/components/ui/glow-menu";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ThemeProvider, useTheme } from 'next-themes';
-import { Home, Calendar, Users, Settings, MessageSquare } from "lucide-react";
+import { Home, Calendar, Users, Settings, MessageSquare, Paperclip, Send } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Id } from '@/convex/_generated/dataModel';
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -39,6 +41,8 @@ function AdminCommunicationContent() {
   const { theme, setTheme } = useTheme();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [activeMenuItem, setActiveMenuItem] = useState("Communication");
+  const [messageText, setMessageText] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const adminData = sessionStorage.getItem("adminUser");
@@ -88,6 +92,30 @@ function AdminCommunicationContent() {
     }).toUpperCase();
   };
 
+  const handleFileAttach = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // File selected - logic will be implemented later
+      console.log("File selected:", file.name);
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (messageText.trim()) {
+      // Send logic will be implemented later
+      console.log("Sending message:", messageText);
+      setMessageText("");
+    }
+  };
+
+  const isAdmin = adminUser !== null; // Simple admin check - can be enhanced later
+
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
       {/* Fixed Background Animation */}
@@ -129,8 +157,8 @@ function AdminCommunicationContent() {
           </div>
         </div>
 
-        {/* Scrollable Message Feed */}
-        <div className="flex-1 bg-gray-100 dark:bg-gray-900 px-4 py-6 overflow-y-auto">
+        {/* Scrollable Message Feed - Add bottom padding for fixed input */}
+        <div className="flex-1 bg-gray-100 dark:bg-gray-900 px-4 py-6 overflow-y-auto pb-32">
           <div className="max-w-4xl mx-auto space-y-6">
             {sampleMessages.map((message) => (
               <div
@@ -154,14 +182,62 @@ function AdminCommunicationContent() {
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Reserved Space for Input Box (Step 2) */}
-          <div className="max-w-4xl mx-auto mt-8 mb-4">
-            <div className="h-20 bg-gray-200 dark:bg-gray-800 border-4 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center">
-              <span className="text-gray-500 dark:text-gray-400 font-bold text-sm uppercase tracking-wide">
-                MESSAGE INPUT AREA (STEP 2)
-              </span>
+        {/* Fixed Input Bar at Bottom */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-black border-t-4 border-black dark:border-white">
+          <div className="max-w-4xl mx-auto p-4">
+            {!isAdmin && (
+              <div className="mb-4 text-center">
+                <div className="bg-red-100 dark:bg-red-900 border-2 border-red-500 p-3">
+                  <span className="text-red-700 dark:text-red-300 font-bold text-sm uppercase tracking-wide">
+                    ⚠️ Only admins can post in this channel.
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex gap-4 items-end">
+              {/* Multiline Text Input */}
+              <div className="flex-1">
+                <Textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder={isAdmin ? "Type your announcement..." : "Only admins can post messages"}
+                  disabled={!isAdmin}
+                  className="min-h-[80px] resize-none border-4 border-black dark:border-white font-mono text-base bg-white dark:bg-black disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500"
+                  rows={3}
+                />
+              </div>
+
+              {/* File Attach Button */}
+              <Button
+                onClick={handleFileAttach}
+                disabled={!isAdmin}
+                className="h-[80px] w-16 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 border-4 border-black dark:border-white text-black dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400"
+              >
+                <Paperclip className="h-6 w-6" />
+              </Button>
+
+              {/* Send Button */}
+              <Button
+                onClick={handleSendMessage}
+                disabled={!isAdmin || !messageText.trim()}
+                className="h-[80px] px-8 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 border-4 border-black dark:border-white font-bold text-lg uppercase tracking-wide disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:text-gray-200"
+              >
+                <Send className="mr-2 h-5 w-5" />
+                POST
+              </Button>
             </div>
+
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
         </div>
       </div>
