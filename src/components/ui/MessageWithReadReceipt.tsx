@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { useAuth } from '@/hooks/use-auth';
 import { Id } from '@/convex/_generated/dataModel';
 import { useInView } from 'react-intersection-observer';
-import { Button } from "@/components/ui/button";
-import { FileText, Download, Play, Image, Smile, Plus } from "lucide-react";
-import { toast } from "sonner";
 import EmojiPicker from 'emoji-picker-react';
-import { useAuth } from '@/hooks/use-auth';
+import { Button } from "@/components/ui/button";
+import { FileText, Download, Play, ImageIcon, FileIcon, AlertCircle, Plus } from "lucide-react";
 
 interface Message {
   _id: Id<"admin_communication_messages">;
@@ -19,7 +18,7 @@ interface Message {
   attachments: Array<{
     url: string;
     name: string;
-    type: "image" | "pdf" | "video";
+    type: "image" | "pdf" | "video" | "docx" | "other";
   }>;
   emojiReactions: Array<{
     emoji: string;
@@ -48,6 +47,8 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
   const { user } = useAuth();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReactionTooltip, setShowReactionTooltip] = useState<string | null>(null);
+  const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set());
+  const [showImageModal, setShowImageModal] = useState<string | null>(null);
   const markAsRead = useMutation(api.communication.markAsRead);
 
   const { ref, inView } = useInView({
@@ -65,80 +66,164 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
   }, [inView, user, message._id, message.senderId, message.readBy, markAsRead]);
 
   const formatTimestamp = (timestamp: number) => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) {
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
-    }
+    return new Date(timestamp).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const handleImageError = (attachmentUrl: string) => {
+    setImageLoadErrors(prev => new Set([...prev, attachmentUrl]));
   };
 
   const renderAttachments = () => {
     if (!message.attachments || message.attachments.length === 0) return null;
 
     return (
-      <div className="mt-3 space-y-2">
+      <div className="mt-3 space-y-3">
         {message.attachments.map((attachment, index) => (
-          <div key={index} className="border-2 border-black dark:border-white p-2">
+          <div key={index} className="border-2 border-black dark:border-white rounded-lg overflow-hidden">
+            {/* Image Attachments */}
             {attachment.type === "image" && (
-              <div className="flex items-center gap-2">
-                <img 
-                  src={attachment.url} 
-                  alt={attachment.name}
-                  className="w-16 h-16 object-cover border-2 border-black dark:border-white"
-                />
-                <div className="flex-1">
-                  <p className="text-sm font-bold font-mono">{attachment.name}</p>
+              <div className="bg-gray-50 dark:bg-gray-900 p-3">
+                {!imageLoadErrors.has(attachment.url) ? (
+                  <div className="space-y-2">
+                    <img 
+                      src={attachment.url} 
+                      alt={attachment.name}
+                      className="max-w-full max-h-[300px] object-contain rounded border-2 border-black dark:border-white cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setShowImageModal(attachment.url)}
+                      onError={() => handleImageError(attachment.url)}
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-mono text-gray-600 dark:text-gray-400 truncate">
+                        {attachment.name}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(attachment.url, '_blank')}
+                        className="text-xs border-2 border-black dark:border-white font-mono"
+                      >
+                        <ImageIcon className="w-3 h-3 mr-1" />
+                        OPEN
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded">
+                    <AlertCircle className="w-6 h-6 text-red-500" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold font-mono text-red-700 dark:text-red-400">
+                        Image could not be previewed
+                      </p>
+                      <p className="text-xs font-mono text-red-600 dark:text-red-500">
+                        {attachment.name}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(attachment.url, '_blank')}
+                      className="text-xs border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-mono"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      DOWNLOAD
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Video Attachments */}
+            {attachment.type === "video" && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3">
+                <div className="space-y-2">
+                  <video 
+                    controls 
+                    className="max-w-full max-h-[300px] rounded border-2 border-black dark:border-white"
+                    preload="metadata"
+                  >
+                    <source src={attachment.url} type="video/mp4" />
+                    <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded">
+                      <AlertCircle className="w-6 h-6 text-red-500" />
+                      <p className="text-sm font-mono text-red-700 dark:text-red-400">
+                        Video could not be loaded
+                      </p>
+                    </div>
+                  </video>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-mono text-blue-600 dark:text-blue-400 truncate">
+                      {attachment.name}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(attachment.url, '_blank')}
+                      className="text-xs border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-mono"
+                    >
+                      <Play className="w-3 h-3 mr-1" />
+                      OPEN
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* PDF Attachments */}
+            {attachment.type === "pdf" && (
+              <div className="bg-red-50 dark:bg-red-900/20 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-800 rounded border-2 border-red-500 flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold font-mono text-red-700 dark:text-red-400 truncate">
+                      {attachment.name}
+                    </p>
+                    <p className="text-xs font-mono text-red-600 dark:text-red-500">
+                      PDF Document
+                    </p>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => window.open(attachment.url, '_blank')}
-                    className="mt-1 text-xs border-2 border-black dark:border-white"
+                    className="text-xs border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white font-mono"
                   >
-                    <Image className="w-3 h-3 mr-1" />
-                    VIEW
+                    <FileText className="w-3 h-3 mr-1" />
+                    OPEN PDF
                   </Button>
                 </div>
               </div>
             )}
             
-            {attachment.type === "pdf" && (
-              <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 p-2">
-                <FileText className="w-8 h-8 text-red-600" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold font-mono">{attachment.name}</p>
+            {/* Other File Types (docx, other) */}
+            {(attachment.type === "docx" || attachment.type === "other") && (
+              <div className="bg-gray-50 dark:bg-gray-900 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded border-2 border-gray-500 flex items-center justify-center">
+                    <FileIcon className="w-6 h-6 text-gray-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold font-mono text-gray-700 dark:text-gray-400 truncate">
+                      {attachment.name}
+                    </p>
+                    <p className="text-xs font-mono text-gray-600 dark:text-gray-500 uppercase">
+                      {attachment.type === "docx" ? "Word Document" : "File"}
+                    </p>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => window.open(attachment.url, '_blank')}
-                    className="mt-1 text-xs border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    className="text-xs border-2 border-gray-600 text-gray-600 hover:bg-gray-600 hover:text-white font-mono"
                   >
                     <Download className="w-3 h-3 mr-1" />
-                    DOWNLOAD PDF
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {attachment.type === "video" && (
-              <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-2">
-                <Play className="w-8 h-8 text-blue-600" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold font-mono">{attachment.name}</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(attachment.url, '_blank')}
-                    className="mt-1 text-xs border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white"
-                  >
-                    <Play className="w-3 h-3 mr-1" />
-                    PLAY VIDEO
+                    DOWNLOAD
                   </Button>
                 </div>
               </div>
@@ -147,6 +232,31 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
         ))}
       </div>
     );
+  };
+
+  const getEmojiCounts = () => {
+    const counts = new Map<string, { count: number; users: string[]; hasCurrentUser: boolean }>();
+    
+    message.emojiReactions?.forEach(reaction => {
+      const existing = counts.get(reaction.emoji) || { count: 0, users: [], hasCurrentUser: false };
+      existing.count++;
+      existing.users.push(reaction.userName);
+      if (user && reaction.userId === user._id) {
+        existing.hasCurrentUser = true;
+      }
+      counts.set(reaction.emoji, existing);
+    });
+    
+    return counts;
+  };
+
+  const handleEmojiSelect = (emojiData: any) => {
+    onEmojiReaction(message._id, emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const handleQuickReaction = (emoji: string) => {
+    onEmojiReaction(message._id, emoji);
   };
 
   const renderReadReceipts = () => {
@@ -170,31 +280,6 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
         </div>
       </div>
     );
-  };
-
-  const getEmojiCounts = () => {
-    const emojiMap = new Map<string, { count: number; users: string[]; hasCurrentUser: boolean }>();
-    
-    message.emojiReactions?.forEach(reaction => {
-      const existing = emojiMap.get(reaction.emoji) || { count: 0, users: [], hasCurrentUser: false };
-      existing.count++;
-      existing.users.push(reaction.userName);
-      if (user && reaction.userId === user._id) {
-        existing.hasCurrentUser = true;
-      }
-      emojiMap.set(reaction.emoji, existing);
-    });
-    
-    return emojiMap;
-  };
-
-  const handleEmojiSelect = (emojiData: any) => {
-    onEmojiReaction(message._id, emojiData.emoji);
-    setShowEmojiPicker(false);
-  };
-
-  const handleQuickReaction = (emoji: string) => {
-    onEmojiReaction(message._id, emoji);
   };
 
   const emojiCounts = getEmojiCounts();
@@ -250,7 +335,7 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
         </div>
       )}
 
-      {/* Attachments */}
+      {/* Enhanced Attachment Previews */}
       {renderAttachments()}
 
       {/* Emoji Reactions Bar */}
@@ -309,8 +394,33 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
         ))}
       </div>
 
-      {/* Read Receipts - Only show for messages from others */}
+      {/* Read Receipts */}
       {renderReadReceipts()}
+
+      {/* Image Modal */}
+      {showImageModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowImageModal(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <img 
+              src={showImageModal} 
+              alt="Full size preview"
+              className="max-w-full max-h-full object-contain rounded border-4 border-white"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImageModal(null)}
+              className="absolute top-4 right-4 bg-white text-black border-2 border-black hover:bg-gray-100"
+            >
+              ✕ CLOSE
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,7 +9,13 @@ export const postMessage = mutation({
     attachments: v.array(v.object({
       url: v.string(),
       name: v.string(),
-      type: v.union(v.literal("image"), v.literal("pdf"), v.literal("video")),
+      type: v.union(
+        v.literal("image"), 
+        v.literal("pdf"), 
+        v.literal("video"),
+        v.literal("docx"),
+        v.literal("other")
+      ),
     })),
   },
   returns: v.object({
@@ -58,7 +64,13 @@ export const getMessages = query({
     attachments: v.array(v.object({
       url: v.string(),
       name: v.string(),
-      type: v.union(v.literal("image"), v.literal("pdf"), v.literal("video")),
+      type: v.union(
+        v.literal("image"), 
+        v.literal("pdf"), 
+        v.literal("video"),
+        v.literal("docx"),
+        v.literal("other")
+      ),
     })),
     emojiReactions: v.array(v.object({
       emoji: v.string(),
