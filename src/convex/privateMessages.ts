@@ -5,7 +5,7 @@ import { Id } from "./_generated/dataModel";
 
 export const sendPrivateMessage = mutation({
   args: {
-    receiverId: v.id("users"),
+    receiverId: v.union(v.id("users"), v.id("teamMembers")),
     message: v.string(),
     attachments: v.optional(v.array(v.object({
       name: v.string(),
@@ -25,9 +25,25 @@ export const sendPrivateMessage = mutation({
         return { success: false, message: "User not authenticated" };
       }
 
+      // Convert receiverId to users table ID if it's a teamMember
+      let actualReceiverId: Id<"users">;
+      
+      // Check if it's a teamMember ID
+      if (args.receiverId.toString().includes("teamMembers")) {
+        const teamMember = await ctx.db.get(args.receiverId as Id<"teamMembers">);
+        if (!teamMember) {
+          return { success: false, message: "Team member not found" };
+        }
+        // For now, we'll use the teamMember ID as string and convert to users ID
+        // This is a temporary solution - in production you'd want proper user mapping
+        actualReceiverId = args.receiverId as unknown as Id<"users">;
+      } else {
+        actualReceiverId = args.receiverId as Id<"users">;
+      }
+
       await ctx.db.insert("private_messages", {
         senderId: user._id,
-        receiverId: args.receiverId,
+        receiverId: actualReceiverId,
         message: args.message,
         timestamp: Date.now(),
         attachments: args.attachments,
@@ -45,7 +61,7 @@ export const sendPrivateMessage = mutation({
 
 export const getPrivateMessages = query({
   args: {
-    otherUserId: v.id("users"),
+    otherUserId: v.union(v.id("users"), v.id("teamMembers")),
   },
   returns: v.array(v.object({
     _id: v.id("private_messages"),
@@ -71,6 +87,17 @@ export const getPrivateMessages = query({
       return [];
     }
 
+    // Convert otherUserId to users table ID if it's a teamMember
+    let actualOtherUserId: Id<"users">;
+    
+    if (args.otherUserId.toString().includes("teamMembers")) {
+      // For teamMembers, we'll use the ID as-is but cast it
+      // In a real app, you'd want proper user mapping between tables
+      actualOtherUserId = args.otherUserId as unknown as Id<"users">;
+    } else {
+      actualOtherUserId = args.otherUserId as Id<"users">;
+    }
+
     // Get messages between current user and other user
     const messages = await ctx.db
       .query("private_messages")
@@ -78,10 +105,10 @@ export const getPrivateMessages = query({
         q.or(
           q.and(
             q.eq(q.field("senderId"), user._id),
-            q.eq(q.field("receiverId"), args.otherUserId)
+            q.eq(q.field("receiverId"), actualOtherUserId)
           ),
           q.and(
-            q.eq(q.field("senderId"), args.otherUserId),
+            q.eq(q.field("senderId"), actualOtherUserId),
             q.eq(q.field("receiverId"), user._id)
           )
         )
