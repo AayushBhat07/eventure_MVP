@@ -6,17 +6,19 @@ import { Id } from "./_generated/dataModel";
 export const postMessage = mutation({
   args: {
     messageText: v.string(),
-    attachments: v.array(v.object({
-      url: v.string(),
-      name: v.string(),
-      type: v.union(
-        v.literal("image"), 
-        v.literal("pdf"), 
-        v.literal("video"),
-        v.literal("docx"),
-        v.literal("other")
-      ),
-    })),
+    attachments: v.array(
+      v.object({
+        url: v.string(),
+        name: v.string(),
+        type: v.union(
+          v.literal("image"),
+          v.literal("pdf"),
+          v.literal("video"),
+          v.literal("docx"),
+          v.literal("other"),
+        ),
+      }),
+    ),
   },
   returns: v.object({
     success: v.boolean(),
@@ -29,69 +31,35 @@ export const postMessage = mutation({
         return { success: false, message: "User not authenticated" };
       }
 
-      // Check if user is admin (assuming role field exists)
       if (user.role !== "admin") {
         return { success: false, message: "Only admins can post messages" };
       }
 
       await ctx.db.insert("admin_communication_messages", {
-        messageText: args.messageText.trim(),
+        messageText: args.messageText,
         senderId: user._id,
         senderName: user.name || "Admin",
         timestamp: Date.now(),
         attachments: args.attachments,
-        emojiReactions: [],
+        reactions: {},
         readBy: [],
       });
 
       return { success: true, message: "Message posted successfully" };
     } catch (error) {
-      console.error("Post message error:", error);
+      console.error("Error posting message:", error);
       return { success: false, message: "Failed to post message" };
     }
   },
 });
 
 export const getMessages = query({
-  args: {},
-  returns: v.array(v.object({
-    _id: v.id("admin_communication_messages"),
-    _creationTime: v.number(),
-    messageText: v.string(),
-    senderId: v.union(v.id("users"), v.id("admins")),
-    senderName: v.string(),
-    timestamp: v.number(),
-    attachments: v.array(v.object({
-      url: v.string(),
-      name: v.string(),
-      type: v.union(
-        v.literal("image"), 
-        v.literal("pdf"), 
-        v.literal("video"),
-        v.literal("docx"),
-        v.literal("other")
-      ),
-    })),
-    emojiReactions: v.array(v.object({
-      emoji: v.string(),
-      userId: v.id("users"),
-      userName: v.string(),
-      timestamp: v.number(),
-    })),
-    readBy: v.array(v.object({
-      userId: v.id("users"),
-      userName: v.string(),
-      readAt: v.number(),
-    })),
-  })),
   handler: async (ctx) => {
-    const messages = await ctx.db
+    return await ctx.db
       .query("admin_communication_messages")
-      .withIndex("by_timestamp")
+      .withIndex("by_timestamp", (q) => q)
       .order("asc")
       .collect();
-    
-    return messages;
   },
 });
 
@@ -116,34 +84,25 @@ export const toggleEmojiReaction = mutation({
         return { success: false, message: "Message not found" };
       }
 
-      const existingReactions = message.emojiReactions || [];
-      const existingReactionIndex = existingReactions.findIndex(
-        (reaction) => reaction.userId === user._id && reaction.emoji === args.emoji
-      );
+      const reactions = message.reactions || {};
+      const userList = reactions[args.emoji] || [];
 
-      let updatedReactions;
-      if (existingReactionIndex >= 0) {
-        // Remove existing reaction (toggle off)
-        updatedReactions = existingReactions.filter((_, index) => index !== existingReactionIndex);
+      if (userList.includes(user._id)) {
+        // User has already reacted, so remove their reaction
+        reactions[args.emoji] = userList.filter((id) => id !== user._id);
+        if (reactions[args.emoji].length === 0) {
+          delete reactions[args.emoji];
+        }
       } else {
-        // Add new reaction
-        const newReaction = {
-          emoji: args.emoji,
-          userId: user._id,
-          userName: user.name || "User",
-          timestamp: Date.now(),
-        };
-        updatedReactions = [...existingReactions, newReaction];
+        // User has not reacted, so add their reaction
+        reactions[args.emoji] = [...userList, user._id];
       }
 
-      await ctx.db.patch(args.messageId, {
-        emojiReactions: updatedReactions,
-      });
-
+      await ctx.db.patch(message._id, { reactions });
       return { success: true, message: "Reaction updated successfully" };
     } catch (error) {
-      console.error("Toggle emoji reaction error:", error);
-      return { success: false, message: "Failed to update reaction" };
+      console.error("Error toggling emoji reaction:", error);
+      return { success: false, message: "Failed to toggle reaction" };
     }
   },
 });
@@ -154,9 +113,8 @@ export const uploadFile = mutation({
   },
   returns: v.object({
     success: v.boolean(),
-    url: v.optional(v.string()),
-    type: v.optional(v.union(v.literal("image"), v.literal("pdf"))),
     message: v.string(),
+    url: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     try {
@@ -165,42 +123,19 @@ export const uploadFile = mutation({
         return { success: false, message: "User not authenticated" };
       }
 
-      // Check if user is admin
-      const isAdmin = user.role === "admin" || user.email?.includes("admin");
-      
-      if (!isAdmin) {
-        return { success: false, message: "Only admins can upload files." };
+      if (user.role !== "admin") {
+        return { success: false, message: "Only admins can upload files" };
       }
 
-      // Get the file URL from storage
       const url = await ctx.storage.getUrl(args.file);
       if (!url) {
         return { success: false, message: "Failed to get file URL" };
       }
 
-      // Get file metadata to determine type
-      const metadata = await ctx.db.system.get(args.file);
-      let fileType: "image" | "pdf" = "image";
-      
-      // Type guard to check if metadata is storage metadata
-      if (metadata && '_id' in metadata && metadata._id.startsWith('k')) {
-        const storageMetadata = metadata as { contentType?: string };
-        if (storageMetadata.contentType?.includes("pdf")) {
-          fileType = "pdf";
-        } else if (storageMetadata.contentType?.includes("image")) {
-          fileType = "image";
-        }
-      }
-
-      return { 
-        success: true, 
-        url, 
-        type: fileType,
-        message: "File uploaded successfully!" 
-      };
+      return { success: true, message: "File uploaded successfully", url };
     } catch (error) {
-      console.error("File upload error:", error);
-      return { success: false, message: "Failed to upload file. Please try again." };
+      console.error("Error uploading file:", error);
+      return { success: false, message: "Failed to upload file" };
     }
   },
 });

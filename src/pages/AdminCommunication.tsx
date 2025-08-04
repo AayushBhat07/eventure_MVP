@@ -182,14 +182,14 @@ function AdminCommunicationContent() {
         attachments: attachmentData,
       });
 
-      if (result.success) {
-        toast.success("Message sent!");
+      if (result && result.success) {
+        toast.success("Message posted successfully!");
         setMessageText("");
         setAttachments([]);
-        // Clean up object URLs
-        attachments.forEach(attachment => URL.revokeObjectURL(attachment.url));
+        setAttachments([]);
+        setShowEmojiPicker(false);
       } else {
-        toast.error(result.message);
+        toast.error(result?.message || "Failed to post message");
       }
     } catch (error) {
       toast.error("Failed to send message. Please try again.");
@@ -199,8 +199,8 @@ function AdminCommunicationContent() {
   const handleEmojiReaction = async (messageId: Id<"admin_communication_messages">, emoji: string) => {
     try {
       const result = await toggleEmojiReaction({ messageId, emoji });
-      if (!result.success) {
-        toast.error(result.message);
+      if (!result || !result.success) {
+        toast.error(result?.message || "Failed to toggle reaction");
       }
     } catch (error) {
       toast.error("Failed to add reaction");

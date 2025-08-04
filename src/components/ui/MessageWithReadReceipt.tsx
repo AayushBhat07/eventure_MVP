@@ -20,12 +20,7 @@ interface Message {
     name: string;
     type: "image" | "pdf" | "video" | "docx" | "other";
   }>;
-  emojiReactions: Array<{
-    emoji: string;
-    userId: Id<"users">;
-    userName: string;
-    timestamp: number;
-  }>;
+  reactions?: Record<string, Id<"users">[]>;
   readBy: Array<{
     userId: Id<"users">;
     userName: string;
@@ -235,18 +230,15 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
   };
 
   const getEmojiCounts = () => {
-    const counts = new Map<string, { count: number; users: string[]; hasCurrentUser: boolean }>();
-    
-    message.emojiReactions?.forEach(reaction => {
-      const existing = counts.get(reaction.emoji) || { count: 0, users: [], hasCurrentUser: false };
-      existing.count++;
-      existing.users.push(reaction.userName);
-      if (user && reaction.userId === user._id) {
-        existing.hasCurrentUser = true;
-      }
-      counts.set(reaction.emoji, existing);
-    });
-    
+    const counts = new Map<string, { count: number; hasCurrentUser: boolean }>();
+    if (!message.reactions) return counts;
+
+    for (const [emoji, userIds] of Object.entries(message.reactions)) {
+      counts.set(emoji, {
+        count: userIds.length,
+        hasCurrentUser: !!(user && userIds.includes(user._id)),
+      });
+    }
     return counts;
   };
 
@@ -367,10 +359,6 @@ const MessageWithReadReceipt: React.FC<MessageWithReadReceiptProps> = ({
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50">
                   <div className="bg-black dark:bg-white text-white dark:text-black text-xs font-mono p-2 rounded border-2 border-black dark:border-white whitespace-nowrap">
                     <div className="font-bold mb-1">{emoji} {data.count}</div>
-                    <div className="max-w-48">
-                      {data.users.slice(0, 5).join(', ')}
-                      {data.users.length > 5 && ` +${data.users.length - 5} more`}
-                    </div>
                   </div>
                 </div>
               )}

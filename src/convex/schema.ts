@@ -113,28 +113,29 @@ const schema = defineSchema({
     senderId: v.union(v.id("users"), v.id("admins")),
     senderName: v.string(),
     timestamp: v.number(),
-    attachments: v.array(v.object({
-      url: v.string(),
-      name: v.string(),
-      type: v.union(
-        v.literal("image"), 
-        v.literal("pdf"), 
-        v.literal("video"),
-        v.literal("docx"),
-        v.literal("other")
-      ),
-    })),
-    emojiReactions: v.array(v.object({
-      emoji: v.string(),
-      userId: v.id("users"),
-      userName: v.string(),
-      timestamp: v.number(),
-    })),
-    readBy: v.array(v.object({
-      userId: v.id("users"),
-      userName: v.string(),
-      readAt: v.number(),
-    })),
+    attachments: v.array(
+      v.object({
+        url: v.string(),
+        name: v.string(),
+        type: v.union(
+          v.literal("image"),
+          v.literal("pdf"),
+          v.literal("video"),
+          v.literal("docx"),
+          v.literal("other"),
+        ),
+      }),
+    ),
+    reactions: v.optional(
+      v.record(v.string(), v.array(v.id("users"))),
+    ),
+    readBy: v.array(
+      v.object({
+        userId: v.id("users"),
+        userName: v.string(),
+        readAt: v.number(),
+      }),
+    ),
   }).index("by_timestamp", ["timestamp"]),
 },
 {
