@@ -67,7 +67,9 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
           </div>
           <div className="flex items-center text-gray-700 dark:text-gray-300">
             <Phone className="h-4 w-4 mr-3 text-gray-500" />
-            <span>{member.phone || 'No phone provided'}</span>
+            <a href={`tel:${member.phone}`} className="hover:underline">
+              {member.phone || 'No phone provided'}
+            </a>
           </div>
         </div>
 
