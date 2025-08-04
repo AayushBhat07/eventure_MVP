@@ -27,6 +27,7 @@ function AdminTeamContent() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     rollNo: "",
@@ -258,11 +259,17 @@ function AdminTeamContent() {
             </div>
           ) : (
             teamMembers.map((member) => (
-              <MemberCard
+              <div
                 key={member._id}
-                member={member}
-                onEdit={() => handleEditMember(member)}
-              />
+                onMouseEnter={() => setHoveredCard(member._id)}
+                onMouseLeave={() => setHoveredCard(null)}
+              >
+                <MemberCard
+                  member={member}
+                  onEdit={() => handleEditMember(member)}
+                  isHovered={hoveredCard === member._id}
+                />
+              </div>
             ))
           )}
         </div>

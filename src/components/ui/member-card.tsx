@@ -17,22 +17,24 @@ interface Member {
 interface MemberCardProps {
   member: Member;
   onEdit: () => void;
+  isHovered: boolean;
 }
 
-const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
+const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, isHovered }) => {
   return (
     <motion.div
-      className="group relative bg-white dark:bg-gray-800 border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] hover:shadow-[12px_12px_0px_#000] dark:hover:shadow-[12px_12px_0px_#fff] transition-all duration-300 hover:-translate-x-1 hover:-translate-y-1 rounded-lg z-10 hover:z-20"
+      className="relative bg-white dark:bg-gray-800 border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] transition-all duration-300 rounded-lg z-10"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      whileHover={{ 
-        scale: 1.05,
-        transition: { duration: 0.3 }
+      style={{
+        transform: isHovered ? 'scale(1.05) translateX(-4px) translateY(-4px)' : 'scale(1) translateX(0) translateY(0)',
+        boxShadow: isHovered ? '12px 12px 0px #000' : '8px 8px 0px #000',
+        zIndex: isHovered ? 20 : 10,
       }}
     >
       {/* Default view - Name and Branch only */}
-      <div className="p-6 group-hover:hidden">
+      <div className={`p-6 ${isHovered ? 'hidden' : 'block'}`}>
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
             <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">
@@ -54,7 +56,7 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
       </div>
 
       {/* Expanded view on hover - All details */}
-      <div className="hidden group-hover:block p-6">
+      <div className={`p-6 ${isHovered ? 'block' : 'hidden'}`}>
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">
             {member.name}
