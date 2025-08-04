@@ -145,14 +145,18 @@ function AdminSettingsContent() {
     console.log("Save button clicked!"); // Debug log
     
     if (!adminUser) {
+      console.log("No admin user found"); // Debug log
       toast.error("Admin user not found. Please sign in again.");
       return;
     }
 
+    console.log("Validating form..."); // Debug log
     if (!validateForm()) {
+      console.log("Form validation failed"); // Debug log
       return;
     }
 
+    console.log("Starting save process..."); // Debug log
     setIsLoading(true);
     
     try {
@@ -173,10 +177,12 @@ function AdminSettingsContent() {
       console.log("Update result:", result); // Debug log
 
       if (result.success) {
+        console.log("Success! Showing toast..."); // Debug log
         toast.success("Profile updated successfully!");
         // Update original data to reflect saved changes
         setOriginalData({ ...formData });
       } else {
+        console.log("Update failed:", result.message); // Debug log
         toast.error(result.message || "Failed to update profile");
       }
     } catch (error) {

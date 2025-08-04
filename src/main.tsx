@@ -21,6 +21,7 @@ import AdminTeam from "./pages/AdminTeam.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminSettings from "./pages/AdminSettings";
+import { Toaster } from "@/components/ui/sonner";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -82,5 +83,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <RouterProvider router={router} />
       </ConvexAuthProvider>
     </ConvexProvider>
+    <Toaster />
   </React.StrictMode>,
 );
