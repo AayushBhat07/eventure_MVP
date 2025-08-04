@@ -65,7 +65,7 @@ function AdminEventsContent() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"teamMembers">[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -83,7 +83,7 @@ function AdminEventsContent() {
 
   const participantsLoading = participants === undefined && selectedEvent !== null;
 
-  const toggleVolunteer = (volunteerId: Id<"users">) => {
+  const toggleVolunteer = (volunteerId: Id<"teamMembers">) => {
     setSelectedVolunteers(prev =>
       prev.includes(volunteerId)
         ? prev.filter(id => id !== volunteerId)
@@ -94,7 +94,6 @@ function AdminEventsContent() {
   // Format volunteer display for better UX
   const formatVolunteerDisplay = (volunteer: any) => {
     const name = volunteer.name || 'Unknown Name';
-    const email = volunteer.email || 'No email';
     const branch = volunteer.branch || 'N/A';
     const rollNo = volunteer.rollNo || 'N/A';
     
@@ -112,8 +111,8 @@ function AdminEventsContent() {
 
   const handleEditClick = (event: any) => {
     setSelectedEvent(event);
-    // Pre-populate volunteers for editing
-    const eventVolunteerIds = event.volunteers?.map((v: any) => v._id) || [];
+    // Pre-populate volunteers for editing - convert from users to team members if needed
+    const eventVolunteerIds = event.volunteers?.map((v: any) => v._id as Id<"teamMembers">) || [];
     setSelectedVolunteers(eventVolunteerIds);
     setEditModalOpen(true);
   };
@@ -125,41 +124,30 @@ function AdminEventsContent() {
 
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedEvent) return;
-
-    const formData = new FormData(e.currentTarget);
-    const eventName = formData.get("eventName") as string;
-    const venue = formData.get("venue") as string;
-    const eventDate = formData.get("eventDate") as string;
-    const eventTime = formData.get("eventTime") as string;
-    const description = formData.get("description") as string;
-    const maxParticipants = formData.get("maxParticipants") as string;
-
-    if (!eventName?.trim() || !venue?.trim() || !eventDate || !eventTime) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const adminData = sessionStorage.getItem("adminUser");
-      if (!adminData) {
-        toast.error("Admin session expired. Please sign in again.");
-        setIsSubmitting(false);
+      const formData = new FormData(e.currentTarget);
+      const eventName = formData.get("eventName") as string;
+      const description = formData.get("description") as string;
+      const venue = formData.get("venue") as string;
+      const eventDate = formData.get("eventDate") as string;
+      const eventTime = formData.get("eventTime") as string;
+      const maxParticipants = formData.get("maxParticipants") as string;
+
+      const startDate = new Date(eventDate + "T" + eventTime).getTime();
+      const endDate = startDate + (2 * 60 * 60 * 1000); // Default 2 hours
+
+      // Get admin info from session storage
+      const adminUser = JSON.parse(sessionStorage.getItem("adminUser") || "{}");
+      if (!adminUser.email) {
+        toast.error("Admin session expired. Please log in again.");
         return;
       }
 
-      const admin = JSON.parse(adminData);
-      
-      // Combine date and time to create timestamps
-      const eventDateTime = new Date(`${eventDate}T${eventTime}`);
-      const startDate = eventDateTime.getTime();
-      const endDate = startDate + (2 * 60 * 60 * 1000); // 2 hours later
-
       const result = await updateEventAsAdmin({
         eventId: selectedEvent._id,
-        adminEmail: admin.email,
+        adminEmail: adminUser.email,
         name: eventName,
         description: description || "",
         venue: venue,
@@ -586,14 +574,14 @@ function AdminEventsContent() {
 
                 <div>
                   <Label className="text-sm font-bold mb-3 block">ASSIGNED VOLUNTEERS</Label>
-                  <p className="text-xs text-muted-foreground mb-2">Select users who will help manage this event</p>
+                  <p className="text-xs text-muted-foreground mb-2">Select team members who will help manage this event</p>
                   <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-black dark:border-white p-3 bg-muted/20">
-                    {allUsers === undefined ? (
+                    {teamMembers === undefined ? (
                       <div className="text-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black dark:border-white mx-auto"></div>
                         <p className="text-sm text-gray-500 mt-2">Loading volunteers...</p>
                       </div>
-                    ) : !allUsers || allUsers.length === 0 ? (
+                    ) : !teamMembers || teamMembers.length === 0 ? (
                       <div className="text-center py-4">
                         <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-muted-foreground">
@@ -601,7 +589,7 @@ function AdminEventsContent() {
                         </p>
                       </div>
                     ) : (
-                      allUsers.map((volunteer) => (
+                      teamMembers.map((volunteer) => (
                         <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                           <button
                             type="button"
@@ -617,7 +605,7 @@ function AdminEventsContent() {
                           </button>
                           <div className="flex-grow">
                             <div className="font-medium text-sm">{formatVolunteerDisplay(volunteer)}</div>
-                            <div className="text-xs text-muted-foreground">{volunteer.email || 'No email provided'}</div>
+                            <div className="text-xs text-muted-foreground">{volunteer.email}</div>
                           </div>
                           {volunteer.role && (
                             <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">

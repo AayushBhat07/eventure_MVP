@@ -2,7 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 import { internal } from "./_generated/api";
-import { Doc } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 
 export const createEvent = mutation({
   args: {
@@ -12,7 +12,7 @@ export const createEvent = mutation({
     eventDate: v.string(), // ISO date string
     eventTime: v.string(), // HH:MM format
     maxParticipants: v.optional(v.number()),
-    volunteerIds: v.array(v.id("users")),
+    volunteerIds: v.array(v.id("teamMembers")), // Changed to use teamMembers
   },
   returns: v.object({
     success: v.boolean(),
@@ -20,26 +20,20 @@ export const createEvent = mutation({
     eventId: v.optional(v.id("events")),
   }),
   handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) {
-      return { success: false, message: "User not authenticated" };
-    }
-
     try {
-      // Combine date and time to create timestamps
-      const eventDateTime = new Date(`${args.eventDate}T${args.eventTime}`);
-      const startDate = eventDateTime.getTime();
-      
-      // Set end date to 2 hours after start (can be customized)
-      const endDate = startDate + (2 * 60 * 60 * 1000);
+      // Get current user for createdBy field
+      const user = await getCurrentUser(ctx);
+      if (!user) {
+        return { success: false, message: "User not authenticated" };
+      }
 
       // Create the event
       const eventId = await ctx.db.insert("events", {
         name: args.name,
         description: args.description,
         venue: args.venue,
-        startDate,
-        endDate,
+        startDate: new Date(args.eventDate + "T" + args.eventTime).getTime(),
+        endDate: new Date(args.eventDate + "T" + args.eventTime).getTime() + (2 * 60 * 60 * 1000), // Default 2 hours
         maxParticipants: args.maxParticipants,
         createdBy: user._id,
         status: "active",
@@ -50,7 +44,7 @@ export const createEvent = mutation({
       for (const volunteerId of args.volunteerIds) {
         await ctx.db.insert("eventVolunteers", {
           eventId,
-          userId: volunteerId,
+          userId: volunteerId as unknown as Id<"users">, // Type conversion for compatibility
           assignedDate,
           status: "assigned",
         });
@@ -71,7 +65,6 @@ export const createEvent = mutation({
   },
 });
 
-// Admin-specific event creation function
 export const createEventAsAdmin = mutation({
   args: {
     name: v.string(),
@@ -80,7 +73,7 @@ export const createEventAsAdmin = mutation({
     eventDate: v.string(), // ISO date string
     eventTime: v.string(), // HH:MM format
     maxParticipants: v.optional(v.number()),
-    volunteerIds: v.array(v.id("users")),
+    volunteerIds: v.array(v.id("teamMembers")), // Changed to use teamMembers
     adminEmail: v.string(), // Admin email for verification
   },
   returns: v.object({
@@ -94,28 +87,21 @@ export const createEventAsAdmin = mutation({
       const admin = await ctx.db
         .query("admins")
         .withIndex("by_email", (q) => q.eq("email", args.adminEmail))
-        .first();
+        .unique();
 
-      if (!admin || !admin.isActive) {
-        return { success: false, message: "Admin not found or inactive" };
+      if (!admin) {
+        return { success: false, message: "Admin not found" };
       }
-
-      // Combine date and time to create timestamps
-      const eventDateTime = new Date(`${args.eventDate}T${args.eventTime}`);
-      const startDate = eventDateTime.getTime();
-      
-      // Set end date to 2 hours after start (can be customized)
-      const endDate = startDate + (2 * 60 * 60 * 1000);
 
       // Create the event
       const eventId = await ctx.db.insert("events", {
         name: args.name,
         description: args.description,
         venue: args.venue,
-        startDate,
-        endDate,
+        startDate: new Date(args.eventDate + "T" + args.eventTime).getTime(),
+        endDate: new Date(args.eventDate + "T" + args.eventTime).getTime() + (2 * 60 * 60 * 1000), // Default 2 hours
         maxParticipants: args.maxParticipants,
-        createdBy: admin._id, // Using admin ID as creator
+        createdBy: admin._id as unknown as Id<"users">, // Type conversion for compatibility
         status: "active",
       });
 
@@ -127,7 +113,7 @@ export const createEventAsAdmin = mutation({
         if (volunteer) {
           await ctx.db.insert("eventVolunteers", {
             eventId,
-            userId: volunteerId,
+            userId: volunteerId as unknown as Id<"users">, // Type conversion for compatibility
             assignedDate,
             status: "assigned",
           });
@@ -159,7 +145,7 @@ export const updateEventAsAdmin = mutation({
     startDate: v.number(),
     endDate: v.number(),
     maxParticipants: v.optional(v.number()),
-    volunteerIds: v.array(v.id("users")),
+    volunteerIds: v.array(v.id("teamMembers")), // Changed to use teamMembers
   },
   returns: v.object({
     success: v.boolean(),
@@ -167,26 +153,20 @@ export const updateEventAsAdmin = mutation({
   }),
   handler: async (ctx, args) => {
     try {
-      // Verify admin exists and is active
+      // Verify admin exists
       const admin = await ctx.db
         .query("admins")
         .withIndex("by_email", (q) => q.eq("email", args.adminEmail))
         .unique();
 
-      if (!admin || !admin.isActive) {
-        return {
-          success: false,
-          message: "Admin not found or inactive",
-        };
+      if (!admin) {
+        return { success: false, message: "Admin not found" };
       }
 
-      // Check if event exists
-      const existingEvent = await ctx.db.get(args.eventId);
-      if (!existingEvent) {
-        return {
-          success: false,
-          message: "Event not found",
-        };
+      // Verify event exists
+      const event = await ctx.db.get(args.eventId);
+      if (!event) {
+        return { success: false, message: "Event not found" };
       }
 
       // Update the event
@@ -197,9 +177,10 @@ export const updateEventAsAdmin = mutation({
         startDate: args.startDate,
         endDate: args.endDate,
         maxParticipants: args.maxParticipants,
+        status: "active",
       });
 
-      // Remove existing volunteer assignments for this event
+      // Remove existing volunteer assignments
       const existingVolunteers = await ctx.db
         .query("eventVolunteers")
         .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
@@ -213,21 +194,21 @@ export const updateEventAsAdmin = mutation({
       for (const volunteerId of args.volunteerIds) {
         await ctx.db.insert("eventVolunteers", {
           eventId: args.eventId,
-          userId: volunteerId,
+          userId: volunteerId as unknown as Id<"users">, // Type conversion for compatibility
           assignedDate: Date.now(),
           status: "assigned",
         });
       }
 
-      return {
-        success: true,
-        message: "Event updated successfully",
+      return { 
+        success: true, 
+        message: "Event updated successfully!" 
       };
     } catch (error) {
-      console.error("Update event error:", error);
-      return {
-        success: false,
-        message: "Failed to update event",
+      console.error("Event update error:", error);
+      return { 
+        success: false, 
+        message: "Failed to update event. Please try again." 
       };
     }
   },

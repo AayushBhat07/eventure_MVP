@@ -40,36 +40,41 @@ import { useNavigate } from "react-router";
 function AdminDashboardContent() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const allUsers = useQuery(api.users.listAll);
-  const availableVolunteers = allUsers || [];
   
   // Fetch real event data
   const currentOngoingEvent = useQuery(api.events.getCurrentOngoingEvent);
   const nextUpcomingEvent = useQuery(api.events.getNextUpcomingEvent);
-  const allEvents = useQuery(api.events.getAllEvents);
+  const allEvents = useQuery(api.events.getAllEventsWithDetails);
   const upcomingEvents = useQuery(api.events.getUpcomingEvents);
+  const teamMembers = useQuery(api.team.getAllTeamMembers);
+  const createEventAsAdmin = useMutation(api.events.createEventAsAdmin);
 
   // Calculate real stats
   const totalEvents = allEvents?.length || 0;
   const upcomingEventsCount = upcomingEvents?.length || 0;
   const completedEvents = allEvents?.filter(event => event.status === "completed").length || 0;
-  const activeParticipants = 156; // This would need a separate query for registrations
+  const activeParticipants = 0; // This would need to be calculated from registrations
 
   const stats = [
-    { title: "TOTAL EVENTS", value: totalEvents.toString(), icon: CalendarIcon, color: "bg-yellow-400" },
+    { title: "TOTAL EVENTS", value: totalEvents.toString(), icon: Calendar, color: "bg-yellow-400" },
     { title: "ACTIVE PARTICIPANTS", value: activeParticipants.toString(), icon: Users, color: "bg-green-400" },
     { title: "COMPLETED EVENTS", value: completedEvents.toString(), icon: Target, color: "bg-blue-400" },
     { title: "UPCOMING EVENTS", value: upcomingEventsCount.toString(), icon: Clock, color: "bg-red-400" }
   ];
 
-  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  // Form state
   const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
-  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"users">[]>([]);
+  const [eventName, setEventName] = useState("");
+  const [description, setDescription] = useState("");
+  const [venue, setVenue] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState("");
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"teamMembers">[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
 
-  const createEventAsAdmin = useMutation(api.events.createEventAsAdmin);
-
-  const toggleVolunteer = (volunteerId: Id<"users">) => {
+  const toggleVolunteer = (volunteerId: Id<"teamMembers">) => {
     setSelectedVolunteers(prev =>
       prev.includes(volunteerId)
         ? prev.filter(id => id !== volunteerId)
@@ -77,29 +82,19 @@ function AdminDashboardContent() {
     );
   };
 
-  const handleCreateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const formData = new FormData(e.currentTarget);
-    const eventName = formData.get("eventName") as string;
-    const venue = formData.get("venue") as string;
-    const eventDate = formData.get("eventDate") as string;
-    const eventTime = formData.get("eventTime") as string;
-    const description = formData.get("description") as string;
-    const maxParticipants = formData.get("maxParticipants") as string;
-
-    if (!eventName?.trim() || !venue?.trim() || !eventDate || !eventTime) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
     setIsSubmitting(true);
-    
+
     try {
+      if (!eventName.trim() || !venue.trim() || !eventDate || !eventTime) {
+        toast.error("Please fill in all required fields");
+        return;
+      }
+
       const adminData = sessionStorage.getItem("adminUser");
       if (!adminData) {
-        toast.error("Admin session expired. Please sign in again.");
-        setIsSubmitting(false);
+        toast.error("Admin session expired. Please log in again.");
         return;
       }
 
@@ -120,7 +115,13 @@ function AdminDashboardContent() {
 
       if (result.success) {
         toast.success(result.message);
-        e.currentTarget.reset();
+        // Reset form
+        setEventName("");
+        setDescription("");
+        setVenue("");
+        setEventDate("");
+        setEventTime("");
+        setMaxParticipants("");
         setSelectedVolunteers([]);
         setIsCreateEventOpen(false);
       } else {
@@ -414,27 +415,51 @@ function AdminDashboardContent() {
                       <div>
                         <Label className="text-sm font-bold mb-3 block">ASSIGN VOLUNTEERS</Label>
                         <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-black dark:border-white p-2">
-                          {availableVolunteers.map((volunteer) => (
-                            <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
-                              <button
-                                type="button"
-                                onClick={() => toggleVolunteer(volunteer._id)}
-                                className="flex-shrink-0"
-                                disabled={isSubmitting}
-                              >
-                                {selectedVolunteers.includes(volunteer._id) ? (
-                                  <CheckSquare className="h-5 w-5 text-black dark:text-white" />
-                                ) : (
-                                  <Square className="h-5 w-5 text-black dark:text-white" />
-                                )}
-                              </button>
-                              <div>
-                                <div className="font-bold">{volunteer.name}</div>
-                                <div className="text-sm text-gray-500">{volunteer.email}</div>
-                              </div>
+                          {teamMembers === undefined ? (
+                            <div className="text-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black dark:border-white mx-auto"></div>
+                              <p className="text-sm text-gray-500 mt-2">Loading volunteers...</p>
                             </div>
-                          ))}
+                          ) : !teamMembers || teamMembers.length === 0 ? (
+                            <div className="text-center py-4">
+                              <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">
+                                No volunteers available. Please add them under /admin-teams or /admin-settings.
+                              </p>
+                            </div>
+                          ) : (
+                            teamMembers.map((volunteer) => (
+                              <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleVolunteer(volunteer._id)}
+                                  className="flex-shrink-0"
+                                  disabled={isSubmitting}
+                                >
+                                  {selectedVolunteers.includes(volunteer._id) ? (
+                                    <CheckSquare className="h-5 w-5 text-primary" />
+                                  ) : (
+                                    <Square className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </button>
+                                <div className="flex-grow">
+                                  <div className="font-medium text-sm">
+                                    {volunteer.name} ({volunteer.branch} - {volunteer.rollNo})
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">{volunteer.email}</div>
+                                </div>
+                                {volunteer.role && (
+                                  <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+                                    {volunteer.role}
+                                  </span>
+                                )}
+                              </div>
+                            ))
+                          )}
                         </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {selectedVolunteers.length} volunteer{selectedVolunteers.length !== 1 ? 's' : ''} selected
+                        </p>
                       </div>
 
                       <div className="flex gap-4 pt-4">
@@ -462,6 +487,57 @@ function AdminDashboardContent() {
                   </DialogContent>
                 </Dialog>
               </section>
+
+              {/* Volunteer Assignment Section */}
+              <div className="space-y-3">
+                <Label className="text-sm font-bold">ASSIGN VOLUNTEERS</Label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-black dark:border-white p-3 bg-muted/20">
+                  {teamMembers === undefined ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black dark:border-white mx-auto"></div>
+                      <p className="text-sm text-gray-500 mt-2">Loading volunteers...</p>
+                    </div>
+                  ) : !teamMembers || teamMembers.length === 0 ? (
+                    <div className="text-center py-4">
+                      <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        No volunteers available. Please add them under /admin-teams or /admin-settings.
+                      </p>
+                    </div>
+                  ) : (
+                    teamMembers.map((volunteer) => (
+                      <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                        <button
+                          type="button"
+                          onClick={() => toggleVolunteer(volunteer._id)}
+                          className="flex-shrink-0"
+                          disabled={isSubmitting}
+                        >
+                          {selectedVolunteers.includes(volunteer._id) ? (
+                            <CheckSquare className="h-5 w-5 text-primary" />
+                          ) : (
+                            <Square className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </button>
+                        <div className="flex-grow">
+                          <div className="font-medium text-sm">
+                            {volunteer.name} ({volunteer.branch} - {volunteer.rollNo})
+                          </div>
+                          <div className="text-xs text-muted-foreground">{volunteer.email}</div>
+                        </div>
+                        {volunteer.role && (
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+                            {volunteer.role}
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {selectedVolunteers.length} volunteer{selectedVolunteers.length !== 1 ? 's' : ''} selected
+                </p>
+              </div>
 
               {/* Calendar */}
               <div className="bg-card/80 backdrop-blur-sm border-4 border-black dark:border-white p-6">
