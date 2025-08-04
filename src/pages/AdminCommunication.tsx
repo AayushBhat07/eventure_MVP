@@ -13,6 +13,7 @@ import MessageWithReadReceipt from "@/components/ui/MessageWithReadReceipt";
 import { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
 import EmojiPicker from 'emoji-picker-react';
+import AvatarDock from "@/components/ui/avatar-dock";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -40,6 +41,7 @@ function AdminCommunicationContent() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isPosting, setIsPosting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Fetch data
   const messages = useQuery(api.communication.getMessages);
@@ -79,6 +81,60 @@ function AdminCommunicationContent() {
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    
+    if (attachments.length + files.length > 5) {
+      toast.error("Maximum 5 attachments allowed per message");
+      return;
+    }
+
+    files.forEach(file => {
+      // Validate file type
+      const validTypes = ['.jpg', '.jpeg', '.png', '.webp', '.pdf', '.mp4'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      if (!validTypes.includes(fileExtension)) {
+        toast.error(`Unsupported file type: ${file.name}`);
+        return;
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File too large: ${file.name} (max 10MB)`);
+        return;
+      }
+
+      // Determine file type
+      let type: "image" | "pdf" | "video";
+      if (['.jpg', '.jpeg', '.png', '.webp'].includes(fileExtension)) {
+        type = "image";
+      } else if (fileExtension === '.pdf') {
+        type = "pdf";
+      } else if (fileExtension === '.mp4') {
+        type = "video";
+      } else {
+        return;
+      }
+
+      // Create preview
+      const url = URL.createObjectURL(file);
+      const preview: AttachmentPreview = {
+        file,
+        url,
+        name: file.name,
+        type
+      };
+
+      setAttachments(prev => [...prev, preview]);
+    });
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     
     if (attachments.length + files.length > 5) {
@@ -236,8 +292,8 @@ function AdminCommunicationContent() {
           <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
 
-        {/* Main Content Container */}
-        <div className="container mx-auto px-4 py-8 pt-24">
+        {/* Main Content Container - adjusted for avatar dock */}
+        <div className="container mx-auto px-4 py-8 pt-24 pr-24">
           {/* Messages Display */}
           <div className="space-y-6 mb-8">
             {messages === undefined ? (
@@ -312,18 +368,20 @@ function AdminCommunicationContent() {
                       type="file"
                       multiple
                       accept="image/*,video/*,.pdf,.doc,.docx"
-                      onChange={handleFileSelect}
+                      onChange={handleFileUpload}
                       className="hidden"
+                      disabled={isUploading}
                     />
                     <div className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-800 font-mono text-sm">
-                      {attachments.length < 5 ? (
+                      {isUploading ? (
                         <>
-                          <Paperclip className="w-4 h-4" />
-                          ATTACH
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black dark:border-white"></div>
+                          UPLOADING...
                         </>
                       ) : (
                         <>
-                          <div className="text-sm font-bold">MAX 5 ATTACHMENTS</div>
+                          <Paperclip className="w-4 h-4" />
+                          ATTACH
                         </>
                       )}
                     </div>
@@ -366,6 +424,9 @@ function AdminCommunicationContent() {
             </div>
           )}
         </div>
+
+        {/* Avatar Dock */}
+        <AvatarDock />
       </div>
     </div>
   );
