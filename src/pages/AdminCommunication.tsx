@@ -4,7 +4,7 @@ import { api } from '@/convex/_generated/api';
 import { MenuBar } from "@/components/ui/glow-menu";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ThemeProvider, useTheme } from 'next-themes';
-import { Home, Calendar, Users, Settings, MessageSquare, Paperclip, Send, X } from "lucide-react";
+import { Home, Calendar, Users, Settings, MessageSquare, Paperclip, Send, X, FileText, Download } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Id } from '@/convex/_generated/dataModel';
 import { Button } from "@/components/ui/button";
@@ -26,11 +26,13 @@ function AdminCommunicationContent() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Convex hooks
   const messages = useQuery(api.communication.getMessages);
   const postMessage = useMutation(api.communication.postMessage);
   const uploadFile = useMutation(api.communication.uploadFile);
+  const toggleEmojiReaction = useMutation(api.communication.toggleEmojiReaction);
 
   useEffect(() => {
     const adminData = sessionStorage.getItem("adminUser");
@@ -38,6 +40,13 @@ function AdminCommunicationContent() {
       setAdminUser(JSON.parse(adminData));
     }
   }, []);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const handleMenuItemClick = (itemName: string) => {
     setActiveMenuItem(itemName);
@@ -160,18 +169,63 @@ function AdminCommunicationContent() {
     }
   };
 
+  const handleEmojiReaction = async (messageId: Id<"admin_communication_messages">, emoji: string) => {
+    try {
+      const result = await toggleEmojiReaction({ messageId, emoji });
+      if (!result.success) {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Emoji reaction error:", error);
+      toast.error("Failed to add reaction. Please try again.");
+    }
+  };
+
   const isAdmin = adminUser !== null; // Simple admin check - can be enhanced later
 
   const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+    
+    return new Date(timestamp).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+      year: 'numeric'
     });
   };
+
+  const getEmojiCounts = (reactions: Array<{ emoji: string; userId: Id<"users">; timestamp: number }>) => {
+    const counts: Record<string, { count: number; userIds: Id<"users">[] }> = {};
+    
+    reactions.forEach(reaction => {
+      if (!counts[reaction.emoji]) {
+        counts[reaction.emoji] = { count: 0, userIds: [] };
+      }
+      counts[reaction.emoji].count++;
+      counts[reaction.emoji].userIds.push(reaction.userId);
+    });
+    
+    return counts;
+  };
+
+  const hasUserReacted = (reactions: Array<{ emoji: string; userId: Id<"users">; timestamp: number }>, emoji: string, userId: Id<"users"> | undefined) => {
+    if (!userId) return false;
+    return reactions.some(reaction => reaction.emoji === emoji && reaction.userId === userId);
+  };
+
+  const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡'];
+
+  // Sort messages by timestamp in ascending order (oldest first)
+  const sortedMessages = messages ? [...messages].sort((a, b) => a.timestamp - b.timestamp) : [];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
@@ -216,62 +270,130 @@ function AdminCommunicationContent() {
 
         {/* Scrollable Message Feed */}
         <div className="flex-1 bg-gray-100 dark:bg-gray-900 px-4 py-6 overflow-y-auto pb-32">
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-4">
             {messages === undefined ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black dark:border-white mx-auto"></div>
                 <p className="text-lg font-bold mt-4">LOADING MESSAGES...</p>
               </div>
-            ) : messages.length === 0 ? (
+            ) : sortedMessages.length === 0 ? (
               <div className="text-center py-12">
                 <h2 className="text-2xl font-bold text-gray-600 mb-2">NO MESSAGES YET</h2>
-                <p className="text-gray-500">Be the first to post an announcement!</p>
+                <p className="text-gray-500">Admins can start the conversation.</p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message._id}
-                  className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-4"
-                >
-                  {/* Message Header */}
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="font-bold text-sm uppercase tracking-wide">
-                      {message.senderName}
+              sortedMessages.map((message) => {
+                const emojiCounts = getEmojiCounts(message.emojiReactions || []);
+                const currentUserId = adminUser?._id as Id<"users"> | undefined;
+                
+                return (
+                  <div
+                    key={message._id}
+                    className="bg-white dark:bg-black border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-4"
+                  >
+                    {/* Message Header */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="bg-black dark:bg-white text-white dark:text-black px-3 py-1 font-bold text-sm uppercase tracking-wide">
+                        {message.senderName}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                        {formatTimestamp(message.timestamp)}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400 font-mono">
-                      {formatTimestamp(message.timestamp)}
-                    </div>
-                  </div>
-                  
-                  {/* Message Content */}
-                  <div className="text-base leading-relaxed mb-3">
-                    {message.messageText}
-                  </div>
+                    
+                    {/* Message Content */}
+                    {message.messageText && (
+                      <div className="text-base leading-relaxed mb-3 font-mono">
+                        {message.messageText}
+                      </div>
+                    )}
 
-                  {/* Attachment */}
-                  {message.attachmentUrl && (
-                    <div className="mt-3 border-2 border-gray-300 dark:border-gray-600 p-2">
-                      {message.attachmentType === 'image' ? (
-                        <img 
-                          src={message.attachmentUrl} 
-                          alt="Attachment" 
-                          className="max-w-full h-auto max-h-64 object-contain"
-                        />
-                      ) : (
-                        <a 
-                          href={message.attachmentUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 underline font-bold"
-                        >
-                          📄 View PDF Attachment
-                        </a>
+                    {/* Attachment Preview */}
+                    {message.attachmentUrl && (
+                      <div className="mt-3 border-4 border-gray-300 dark:border-gray-600 p-3">
+                        {message.attachmentType === 'image' ? (
+                          <img 
+                            src={message.attachmentUrl} 
+                            alt="Attachment" 
+                            className="max-w-full h-auto max-h-64 object-contain border-2 border-black dark:border-white"
+                          />
+                        ) : message.attachmentType === 'pdf' ? (
+                          <div className="flex items-center gap-3 p-3 bg-red-100 dark:bg-red-900 border-2 border-red-500">
+                            <FileText className="h-8 w-8 text-red-600 dark:text-red-400" />
+                            <div className="flex-1">
+                              <div className="font-bold text-sm uppercase">PDF DOCUMENT</div>
+                              <a 
+                                href={message.attachmentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-red-600 dark:text-red-400 underline font-bold flex items-center gap-1 mt-1"
+                              >
+                                <Download className="h-4 w-4" />
+                                DOWNLOAD PDF
+                              </a>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-800 border-2 border-gray-400">
+                            <FileText className="h-8 w-8 text-gray-600 dark:text-gray-400" />
+                            <div className="flex-1">
+                              <div className="font-bold text-sm uppercase">FILE ATTACHMENT</div>
+                              <a 
+                                href={message.attachmentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 underline font-bold flex items-center gap-1 mt-1"
+                              >
+                                <Download className="h-4 w-4" />
+                                DOWNLOAD FILE
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Emoji Reactions */}
+                    <div className="mt-4 pt-3 border-t-2 border-gray-200 dark:border-gray-700">
+                      {/* Existing Reactions */}
+                      {Object.keys(emojiCounts).length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {Object.entries(emojiCounts).map(([emoji, data]) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleEmojiReaction(message._id, emoji)}
+                              className={`flex items-center gap-1 px-2 py-1 border-2 font-bold text-sm transition-colors ${
+                                hasUserReacted(message.emojiReactions || [], emoji, currentUserId)
+                                  ? 'bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-300'
+                                  : 'bg-gray-100 dark:bg-gray-800 border-gray-400 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              <span className="text-lg">{emoji}</span>
+                              <span className="text-xs">{data.count}</span>
+                            </button>
+                          ))}
+                        </div>
                       )}
+
+                      {/* Add Reaction Buttons */}
+                      <div className="flex flex-wrap gap-1">
+                        {commonEmojis.map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleEmojiReaction(message._id, emoji)}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-lg"
+                            title={`React with ${emoji}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))
+                  </div>
+                );
+              })
             )}
+            <div ref={messagesEndRef} />
           </div>
         </div>
 

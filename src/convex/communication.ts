@@ -70,7 +70,7 @@ export const getMessages = query({
     const messages = await ctx.db
       .query("admin_communication_messages")
       .withIndex("by_timestamp")
-      .order("desc")
+      .order("asc")
       .collect();
     
     return messages;
@@ -130,6 +130,60 @@ export const uploadFile = mutation({
     } catch (error) {
       console.error("File upload error:", error);
       return { success: false, message: "Failed to upload file. Please try again." };
+    }
+  },
+});
+
+export const toggleEmojiReaction = mutation({
+  args: {
+    messageId: v.id("admin_communication_messages"),
+    emoji: v.string(),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      const user = await getCurrentUser(ctx);
+      if (!user) {
+        return { success: false, message: "User not authenticated" };
+      }
+
+      const message = await ctx.db.get(args.messageId);
+      if (!message) {
+        return { success: false, message: "Message not found" };
+      }
+
+      const currentReactions = message.emojiReactions || [];
+      const existingReactionIndex = currentReactions.findIndex(
+        reaction => reaction.emoji === args.emoji && reaction.userId === user._id
+      );
+
+      let updatedReactions;
+      if (existingReactionIndex >= 0) {
+        // Remove existing reaction (toggle off)
+        updatedReactions = currentReactions.filter((_, index) => index !== existingReactionIndex);
+      } else {
+        // Add new reaction
+        updatedReactions = [
+          ...currentReactions,
+          {
+            emoji: args.emoji,
+            userId: user._id,
+            timestamp: Date.now(),
+          }
+        ];
+      }
+
+      await ctx.db.patch(args.messageId, {
+        emojiReactions: updatedReactions,
+      });
+
+      return { success: true, message: "Reaction updated successfully!" };
+    } catch (error) {
+      console.error("Toggle emoji reaction error:", error);
+      return { success: false, message: "Failed to update reaction. Please try again." };
     }
   },
 });
