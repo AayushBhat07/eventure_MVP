@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './button';
 import { Badge } from './badge';
-import { Phone, Mail, User, Trash2, Edit, MapPin } from 'lucide-react';
+import { Phone, Mail, User, MessageCircle, Edit, MapPin } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -22,7 +22,6 @@ interface MemberCardProps {
 }
 
 const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
-  const deleteTeamMember = useMutation(api.team.deleteTeamMember);
   const [isHovered, setIsHovered] = useState(false);
 
   // Add null/undefined check for member
@@ -30,13 +29,13 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
     return null;
   }
 
-  const handleDelete = async () => {
-    try {
-      await deleteTeamMember({ memberId: member._id });
-      toast.success("Team member deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete team member.");
-      console.error("Failed to delete team member:", error);
+  const handleMessage = () => {
+    if (member.phone) {
+      // Open SMS app with the member's phone number
+      window.open(`sms:${member.phone}`, '_self');
+      toast.success(`Opening message to ${member.name}`);
+    } else {
+      toast.error("No phone number available for messaging");
     }
   };
 
@@ -152,13 +151,12 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit }) => {
               Edit
             </Button>
             <Button 
-              onClick={handleDelete}
-              className="flex-1 bg-red-500 border-2 border-black dark:border-white rounded-lg py-2 text-white font-semibold text-sm hover:bg-red-600 transition-colors"
-              variant="destructive"
+              onClick={handleMessage}
+              className="flex-1 bg-green-500 border-2 border-black dark:border-white rounded-lg py-2 text-white font-semibold text-sm hover:bg-green-600 transition-colors"
               size="sm"
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete
+              <MessageCircle className="h-4 w-4 mr-1" />
+              Message
             </Button>
           </div>
         </motion.div>
