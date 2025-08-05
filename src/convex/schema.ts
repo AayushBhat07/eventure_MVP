@@ -51,6 +51,7 @@ const schema = defineSchema({
   // Team members table for admin profiles
   teamMembers: defineTable({
     adminId: v.optional(v.id("admins")), // Make adminId optional for regular volunteers
+    userId: v.optional(v.id("users")), // Add userId field to link to users table
     name: v.string(),
     rollNo: v.string(),
     branch: v.string(),
@@ -61,7 +62,8 @@ const schema = defineSchema({
     volunteerEvents: v.optional(v.array(v.id("events"))), // Events they're volunteering for
   })
     .index("by_admin_id", ["adminId"])
-    .index("by_email", ["email"]), // Add email index for uniqueness check
+    .index("by_email", ["email"]) // Add email index for uniqueness check
+    .index("by_user_id", ["userId"]), // Add index for userId
 
   // Events table
   events: defineTable({

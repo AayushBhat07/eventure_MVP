@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { X, Paperclip, Send } from 'lucide-react';
 import { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
-import EmojiPicker from 'emoji-picker-react';
 
 interface PrivateDMModalProps {
   isOpen: boolean;
@@ -15,7 +14,7 @@ interface PrivateDMModalProps {
   recipientRole?: string;
 }
 
-interface PrivateMessage {
+interface DirectMessage {
   _id: Id<"private_messages">;
   _creationTime: number;
   senderId: Id<"users">;
@@ -47,41 +46,70 @@ const PrivateDMModal: React.FC<PrivateDMModalProps> = ({
   const [isPosting, setIsPosting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Skip the query for now to prevent ID mismatch error
-  const messages: PrivateMessage[] | undefined = undefined;
+  // Live query for direct messages
+  const messages = useQuery(
+    api.privateMessages.getDirectMessages,
+    isOpen && currentUser ? { recipientId } : "skip"
+  ) as DirectMessage[] | undefined;
+
+  // Mutations for sending messages and reactions
+  const sendMessage = useMutation(api.privateMessages.sendDirectMessage);
+  const markAsRead = useMutation(api.privateMessages.markPrivateMessageAsRead);
+  const toggleReaction = useMutation(api.privateMessages.togglePrivateMessageReaction);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && messages) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Mark messages as read when modal opens (disabled for now)
+  // Mark messages as read when modal opens or new messages arrive
   useEffect(() => {
     if (isOpen && messages && currentUser) {
-      // Temporarily disabled to prevent errors
-      // messages.forEach(message => {
-      //   if (message.senderId !== currentUser._id && 
-      //       (!message.readBy || !message.readBy.includes(currentUser._id))) {
-      //     markAsRead({ messageId: message._id });
-      //   }
-      // });
+      messages.forEach(message => {
+        if (message.senderId !== currentUser._id && 
+            (!message.readBy || !message.readBy.includes(currentUser._id))) {
+          markAsRead({ messageId: message._id });
+        }
+      });
     }
-  }, [isOpen, messages, currentUser]);
+  }, [isOpen, messages, currentUser, markAsRead]);
 
   const handleSendMessage = async () => {
     if (!messageText.trim() || !currentUser || isPosting) return;
 
-    // For now, show a toast that this is a demo
-    toast.success('DM functionality is being set up. This is a demo interface.');
-    setMessageText('');
-    return;
+    setIsPosting(true);
+    try {
+      const result = await sendMessage({
+        recipientId,
+        message: messageText.trim(),
+      });
+
+      if (result.success) {
+        setMessageText('');
+        toast.success('Message sent!');
+      } else {
+        toast.error(result.message || 'Failed to send message');
+      }
+    } catch (error) {
+      console.error('Send message error:', error);
+      toast.error('Failed to send message');
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const handleEmojiReaction = async (messageId: Id<"private_messages">, emoji: string) => {
-    // Temporarily disabled
-    toast.success('Emoji reactions will be available soon!');
+    try {
+      const result = await toggleReaction({ messageId, emoji });
+      if (!result.success) {
+        toast.error(result.message || 'Failed to toggle reaction');
+      }
+    } catch (error) {
+      console.error('Toggle reaction error:', error);
+      toast.error('Failed to toggle reaction');
+    }
   };
 
   const getInitials = (name: string): string => {
@@ -100,6 +128,14 @@ const PrivateDMModal: React.FC<PrivateDMModalProps> = ({
       minute: '2-digit',
       hour12: false 
     });
+  };
+
+  const isMessageRead = (message: DirectMessage): boolean => {
+    if (message.senderId === currentUser?._id) {
+      // For sent messages, check if recipient has read it
+      return message.readBy ? message.readBy.length > 1 : false;
+    }
+    return true; // Received messages are always considered "read" for display
   };
 
   if (!isOpen) return null;
@@ -138,44 +174,71 @@ const PrivateDMModal: React.FC<PrivateDMModalProps> = ({
 
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* Show demo message for now */}
-          <div className="text-center py-12">
-            <h3 className="text-xl font-mono font-bold text-gray-600 mb-2 uppercase">DM INTERFACE READY</h3>
-            <p className="text-gray-500 font-mono uppercase">Private messaging with {recipientName} will be available soon.</p>
-            <p className="text-gray-500 font-mono uppercase text-sm mt-2">This is a demo of the brutalist DM interface.</p>
-            
-            {/* Demo Message Bubbles */}
-            <div className="mt-8 space-y-4">
-              {/* Received Message Demo */}
-              <div className="flex justify-start">
-                <div className="max-w-[70%]">
-                  <div className="p-4 border-4 border-black font-mono bg-[#eaeaea] mr-4">
-                    <p className="text-sm leading-relaxed">
-                      Hey! This is what a received message looks like in the brutalist DM interface.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs font-mono text-gray-600">
-                    <span>14:30</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sent Message Demo */}
-              <div className="flex justify-end">
-                <div className="max-w-[70%]">
-                  <div className="p-4 border-4 border-black font-mono bg-white ml-4">
-                    <p className="text-sm leading-relaxed">
-                      And this is what your sent messages will look like! Clean, bold, and brutalist.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs font-mono text-gray-600 justify-end">
-                    <span>14:31</span>
-                    <span className="font-bold uppercase">READ ✅</span>
-                  </div>
-                </div>
-              </div>
+          {/* Loading State */}
+          {messages === undefined && (
+            <div className="text-center py-12">
+              <div className="inline-block w-8 h-8 border-4 border-black border-t-transparent animate-spin"></div>
+              <p className="text-gray-500 font-mono uppercase mt-4">LOADING MESSAGES...</p>
             </div>
-          </div>
+          )}
+
+          {/* Empty State */}
+          {messages && messages.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-xl font-mono font-bold text-gray-600 mb-2 uppercase">NO MESSAGES YET</h3>
+              <p className="text-gray-500 font-mono uppercase">Start the conversation with {recipientName}!</p>
+            </div>
+          )}
+
+          {/* Messages */}
+          {messages && messages.length > 0 && messages.map((message) => {
+            const isSent = message.senderId === currentUser?._id;
+            const messageRead = isMessageRead(message);
+
+            return (
+              <div key={message._id} className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}>
+                <div className="max-w-[70%]">
+                  <div className={`p-4 border-4 border-black font-mono ${
+                    isSent ? 'bg-white ml-4' : 'bg-[#eaeaea] mr-4'
+                  }`}>
+                    <p className="text-sm leading-relaxed">
+                      {message.message}
+                    </p>
+                    
+                    {/* Reactions */}
+                    {message.reactions && Object.keys(message.reactions).length > 0 && (
+                      <div className="flex gap-1 mt-2">
+                        {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleEmojiReaction(message._id, emoji)}
+                            className={`px-2 py-1 text-xs border-2 border-black ${
+                              userIds.includes(currentUser?._id || '' as Id<"users">)
+                                ? 'bg-black text-white'
+                                : 'bg-white hover:bg-gray-100'
+                            }`}
+                          >
+                            {emoji} {userIds.length}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className={`flex items-center gap-2 mt-1 text-xs font-mono text-gray-600 ${
+                    isSent ? 'justify-end' : 'justify-start'
+                  }`}>
+                    <span>{formatTimestamp(message.timestamp)}</span>
+                    {isSent && (
+                      <span className="font-bold uppercase">
+                        {messageRead ? 'READ ✅' : 'SENT ✓'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
 
@@ -195,6 +258,7 @@ const PrivateDMModal: React.FC<PrivateDMModalProps> = ({
                     handleSendMessage();
                   }
                 }}
+                disabled={isPosting}
               />
             </div>
 
@@ -204,12 +268,16 @@ const PrivateDMModal: React.FC<PrivateDMModalProps> = ({
               <button
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 className="px-4 py-2 border-4 border-black bg-white hover:bg-gray-100 font-mono text-sm font-bold uppercase"
+                disabled={isPosting}
               >
                 😀
               </button>
 
               {/* Attach Button */}
-              <button className="px-4 py-2 border-4 border-black bg-white hover:bg-gray-100 font-mono text-sm font-bold uppercase">
+              <button 
+                className="px-4 py-2 border-4 border-black bg-white hover:bg-gray-100 font-mono text-sm font-bold uppercase"
+                disabled={isPosting}
+              >
                 <Paperclip className="w-4 h-4" />
               </button>
 
@@ -232,16 +300,16 @@ const PrivateDMModal: React.FC<PrivateDMModalProps> = ({
           {showEmojiPicker && (
             <div className="mt-4 border-4 border-black">
               <div className="p-4 bg-white">
-                <p className="font-mono text-sm font-bold uppercase">EMOJI PICKER COMING SOON!</p>
-                <div className="flex gap-2 mt-2">
-                  {['👍', '❤️', '😂', '😮', '😢', '😡'].map((emoji) => (
+                <p className="font-mono text-sm font-bold uppercase mb-2">QUICK REACTIONS</p>
+                <div className="flex gap-2">
+                  {['👍', '❤️', '😂', '😮', '😢', '😡', '🔥', '💯'].map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => {
                         setMessageText(prev => prev + emoji);
                         setShowEmojiPicker(false);
                       }}
-                      className="w-8 h-8 border-2 border-black hover:bg-gray-100"
+                      className="w-8 h-8 border-2 border-black hover:bg-gray-100 font-mono"
                     >
                       {emoji}
                     </button>

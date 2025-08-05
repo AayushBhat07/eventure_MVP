@@ -3,6 +3,143 @@ import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 import { Id } from "./_generated/dataModel";
 
+// Query to get direct messages between two users
+export const getDirectMessages = query({
+  args: {
+    recipientId: v.union(v.id("users"), v.id("teamMembers")),
+  },
+  returns: v.array(v.object({
+    _id: v.id("private_messages"),
+    _creationTime: v.number(),
+    senderId: v.id("users"),
+    receiverId: v.id("users"),
+    message: v.string(),
+    timestamp: v.number(),
+    attachments: v.optional(v.array(v.object({
+      name: v.string(),
+      url: v.string(),
+      type: v.union(v.literal("image"), v.literal("video"), v.literal("pdf"), v.literal("docx"), v.literal("other")),
+      size: v.optional(v.number()),
+    }))),
+    reactions: v.optional(v.record(v.string(), v.array(v.id("users")))),
+    readBy: v.optional(v.array(v.id("users"))),
+    senderName: v.optional(v.string()),
+    receiverName: v.optional(v.string()),
+  })),
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return [];
+    }
+
+    // Convert recipientId to actual user ID if needed
+    let actualRecipientId: Id<"users">;
+    
+    // Check if recipientId is from teamMembers table
+    if (args.recipientId.toString().includes("teamMembers")) {
+      const teamMember = await ctx.db.get(args.recipientId as Id<"teamMembers">);
+      if (!teamMember || !teamMember.userId) {
+        return [];
+      }
+      actualRecipientId = teamMember.userId;
+    } else {
+      actualRecipientId = args.recipientId as Id<"users">;
+    }
+
+    // Get messages between current user and recipient
+    const messages = await ctx.db
+      .query("private_messages")
+      .filter((q) => 
+        q.or(
+          q.and(
+            q.eq(q.field("senderId"), user._id),
+            q.eq(q.field("receiverId"), actualRecipientId)
+          ),
+          q.and(
+            q.eq(q.field("senderId"), actualRecipientId),
+            q.eq(q.field("receiverId"), user._id)
+          )
+        )
+      )
+      .order("asc") // Sort by timestamp ascending for chronological order
+      .collect();
+
+    // Get sender and receiver names for display
+    const messagesWithNames = await Promise.all(
+      messages.map(async (message) => {
+        const sender = await ctx.db.get(message.senderId);
+        const receiver = await ctx.db.get(message.receiverId);
+        
+        return {
+          ...message,
+          senderName: sender?.name || "Unknown User",
+          receiverName: receiver?.name || "Unknown User",
+        };
+      })
+    );
+
+    return messagesWithNames;
+  },
+});
+
+export const sendDirectMessage = mutation({
+  args: {
+    recipientId: v.union(v.id("users"), v.id("teamMembers")),
+    message: v.string(),
+    attachments: v.optional(v.array(v.object({
+      name: v.string(),
+      url: v.string(),
+      type: v.union(v.literal("image"), v.literal("video"), v.literal("pdf"), v.literal("docx"), v.literal("other")),
+      size: v.optional(v.number()),
+    }))),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    message: v.string(),
+    messageId: v.optional(v.id("private_messages")),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      const user = await getCurrentUser(ctx);
+      if (!user) {
+        return { success: false, message: "User not authenticated" };
+      }
+
+      // Convert recipientId to actual user ID if needed
+      let actualRecipientId: Id<"users">;
+      
+      if (args.recipientId.toString().includes("teamMembers")) {
+        const teamMember = await ctx.db.get(args.recipientId as Id<"teamMembers">);
+        if (!teamMember || !teamMember.userId) {
+          return { success: false, message: "Recipient not found" };
+        }
+        actualRecipientId = teamMember.userId;
+      } else {
+        actualRecipientId = args.recipientId as Id<"users">;
+      }
+
+      const messageId = await ctx.db.insert("private_messages", {
+        senderId: user._id,
+        receiverId: actualRecipientId,
+        message: args.message,
+        timestamp: Date.now(),
+        attachments: args.attachments,
+        reactions: {},
+        readBy: [user._id], // Sender has read their own message
+      });
+
+      return { 
+        success: true, 
+        message: "Message sent successfully",
+        messageId 
+      };
+    } catch (error) {
+      console.error("Send direct message error:", error);
+      return { success: false, message: "Failed to send message" };
+    }
+  },
+});
+
 export const sendPrivateMessage = mutation({
   args: {
     receiverId: v.union(v.id("users"), v.id("teamMembers")),
