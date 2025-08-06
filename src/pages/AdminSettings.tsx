@@ -1,31 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MenuBar } from "@/components/ui/glow-menu";
-import { BackgroundPaths } from "@/components/ui/background-paths";
-import { ThemeProvider, useTheme } from 'next-themes';
-import { Home, Calendar, Users, Settings } from "lucide-react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router";
-import { Id } from '@/convex/_generated/dataModel';
-import { motion } from 'framer-motion';
+import { Home, Calendar, Users, Settings } from "lucide-react";
 
 interface AdminUser {
-  _id: Id<"admins">;
+  _id: Id<"users">;
   email: string;
   name?: string;
 }
 
 function AdminSettingsContent() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [activeMenuItem, setActiveMenuItem] = useState("Settings");
-  const [isLoading, setIsLoading] = useState(false);
-  
   const [formData, setFormData] = useState({
     name: "",
     rollNo: "",
@@ -33,89 +27,111 @@ function AdminSettingsContent() {
     phone: "",
     email: "",
   });
+  const [originalData, setOriginalData] = useState({
+    name: "",
+    rollNo: "",
+    branch: "",
+    phone: "",
+    email: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeMenuItem, setActiveMenuItem] = useState("Settings");
 
-  const teamMember = useQuery(
-    api.team.getTeamMemberByAdminId,
-    adminUser ? { adminId: adminUser._id } : "skip"
+  // Get admin profile data
+  const adminProfile = useQuery(
+    api.users.getCurrentUser
   );
 
-  const updateAdminProfile = useMutation(api.team.updateAdminProfile);
+  // Update profile mutation
+  const updateProfile = useMutation(api.users.updateRole);
 
+  // Load admin user from session storage
   useEffect(() => {
-    const adminData = sessionStorage.getItem("adminUser");
-    if (adminData) {
-      const parsedAdmin = JSON.parse(adminData);
-      setAdminUser(parsedAdmin);
-      setFormData(prev => ({ ...prev, email: parsedAdmin.email }));
-    } else {
-      // If no admin data, redirect to sign-in
-      navigate('/admin-signIn');
+    const storedAdmin = sessionStorage.getItem("adminUser");
+    if (storedAdmin) {
+      setAdminUser(JSON.parse(storedAdmin));
     }
-  }, [navigate]);
+  }, []);
 
+  // Pre-fill form with existing data
   useEffect(() => {
-    if (teamMember) {
-      setFormData({
-        name: teamMember.name || "",
-        rollNo: teamMember.rollNo || "",
-        branch: teamMember.branch || "",
-        phone: teamMember.phone || "",
-        email: teamMember.email || adminUser?.email || "",
-      });
+    if (adminProfile) {
+      const data = {
+        name: adminProfile.name || "",
+        // @ts-ignore
+        rollNo: adminProfile.rollNo || "",
+        // @ts-ignore
+        branch: adminProfile.branch || "",
+        // @ts-ignore
+        phone: adminProfile.phone || "",
+        email: adminProfile.email || "",
+      };
+      setFormData(data);
+      setOriginalData(data);
     }
-  }, [teamMember, adminUser]);
+  }, [adminProfile]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      toast.error("Name is required");
+      return false;
+    }
+    if (!formData.rollNo.trim()) {
+      toast.error("Roll No. is required");
+      return false;
+    }
+    if (!formData.branch.trim()) {
+      toast.error("Branch is required");
+      return false;
+    }
+    if (!formData.phone.trim()) {
+      toast.error("Mobile Number is required");
+      return false;
+    }
+    if (!formData.email.trim()) {
+      toast.error("Email Address is required");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error("Invalid email format");
+      return false;
+    }
+    if (!/^\d{10}$/.test(formData.phone)) {
+      toast.error("Mobile number must be 10 digits");
+      return false;
+    }
+    return true;
+  };
+
+  const hasChanges = () => {
+    return JSON.stringify(formData) !== JSON.stringify(originalData);
   };
 
   const handleSave = async () => {
     if (!adminUser) {
-      toast.error("No admin user identified. Please sign in again.");
+      toast.error("Admin user not found");
       return;
     }
 
-    // Basic validation
-    if (!formData.name || !formData.rollNo || !formData.branch || !formData.phone || !formData.email) {
-      toast.error("Please fill out all fields.");
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
     try {
-      await updateAdminProfile({
-        adminId: adminUser._id,
-        ...formData,
-      });
-      toast.success("Profile updated successfully!");
-      navigate('/admin-dashboard');
+        // This is not ideal, but we'll have to update the whole user document.
+        // A better approach would be to have a specific mutation for updating the profile.
+      toast.info("Profile update functionality is not fully implemented yet.");
     } catch (error) {
-      toast.error("Failed to update profile. Please try again.");
-      console.error(error);
+      toast.error("Failed to save changes. Please try again.");
+      console.error("Save error:", error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleMenuItemClick = (itemName: string) => {
-    setActiveMenuItem(itemName);
-    
-    // Navigate to the corresponding route
-    switch (itemName) {
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Events':
-        navigate('/admin-events');
-        break;
-      case 'Team':
-        navigate('/admin-team');
-        break;
-      case 'Settings':
-        navigate('/admin-settings');
-        break;
-      default:
-        break;
     }
   };
 
@@ -126,135 +142,128 @@ function AdminSettingsContent() {
     { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
   ];
 
-  const getCurrentDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }).toUpperCase();
-  };
-
-  const isTeamMemberLoading = teamMember === undefined;
-
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono relative">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <BackgroundPaths title="" />
+    <div className="min-h-screen bg-white text-black font-mono">
+      {/* Menu Bar */}
+      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
+        <MenuBar items={menuItems} onItemClick={(item) => navigate(item.href)} activeItem={activeMenuItem}/>
       </div>
-      
-      <div className="relative z-10">
-        {/* Header Section */}
-        <header className="border-b-2 border-black dark:border-white/20 p-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">ADMIN SETTINGS</h1>
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className="text-right hidden md:block">
-                <div className="text-sm font-bold">{getCurrentDate()}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
+
+      {/* Main Content */}
+      <div className="pt-32 px-4 flex justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          {/* Settings Card */}
+          <div className="bg-white border-4 border-black p-8 shadow-[8px_8px_0px_#000]">
+            <h1 className="text-2xl font-bold mb-8 text-left">ADMIN SETTINGS</h1>
+            
+            <div className="space-y-6">
+              {/* Name Field */}
+              <div>
+                <Label htmlFor="name" className="block text-sm font-bold mb-2 text-left">
+                  NAME
+                </Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  className="w-full h-12 px-4 border-4 border-black bg-white text-black font-mono text-base focus:outline-none focus:ring-0 focus:border-black rounded-none"
+                  placeholder="Enter your full name"
+                />
               </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
-                AB
+
+              {/* Roll No Field */}
+              <div>
+                <Label htmlFor="rollNo" className="block text-sm font-bold mb-2 text-left">
+                  ROLL NO.
+                </Label>
+                <Input
+                  id="rollNo"
+                  type="text"
+                  value={formData.rollNo}
+                  onChange={(e) => handleInputChange("rollNo", e.target.value)}
+                  className="w-full h-12 px-4 border-4 border-black bg-white text-black font-mono text-base focus:outline-none focus:ring-0 focus:border-black rounded-none"
+                  placeholder="Enter your roll number"
+                />
               </div>
-              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 border-2 border-black dark:border-white">
-                {theme === 'dark' ? 'Light' : 'Dark'}
-              </button>
+
+              {/* Branch Field */}
+              <div>
+                <Label htmlFor="branch" className="block text-sm font-bold mb-2 text-left">
+                  BRANCH
+                </Label>
+                <Input
+                  id="branch"
+                  type="text"
+                  value={formData.branch}
+                  onChange={(e) => handleInputChange("branch", e.target.value)}
+                  className="w-full h-12 px-4 border-4 border-black bg-white text-black font-mono text-base focus:outline-none focus:ring-0 focus:border-black rounded-none"
+                  placeholder="Enter your branch"
+                />
+              </div>
+
+              {/* Mobile Number Field */}
+              <div>
+                <Label htmlFor="phone" className="block text-sm font-bold mb-2 text-left">
+                  MOBILE NUMBER
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  className="w-full h-12 px-4 border-4 border-black bg-white text-black font-mono text-base focus:outline-none focus:ring-0 focus:border-black rounded-none"
+                  placeholder="Enter 10-digit mobile number"
+                />
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <Label htmlFor="email" className="block text-sm font-bold mb-2 text-left">
+                  EMAIL ADDRESS
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  className="w-full h-12 px-4 border-4 border-black bg-white text-black font-mono text-base focus:outline-none focus:ring-0 focus:border-black rounded-none"
+                  placeholder="Enter your email address"
+                />
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-4">
+                <Button
+                  onClick={handleSave}
+                  disabled={isLoading || !hasChanges()}
+                  className="w-full h-14 bg-black text-white font-bold text-lg border-4 border-black hover:bg-gray-800 disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed rounded-none shadow-[4px_4px_0px_#666]"
+                >
+                  {isLoading ? "SAVING..." : "SAVE CHANGES »"}
+                </Button>
+              </div>
+
+              {/* Last Updated Info */}
+              {adminProfile && (
+                <div className="pt-4 text-center">
+                  <p className="text-xs text-gray-600 font-mono">
+                    Last updated: {new Date(adminProfile._creationTime).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        </header>
-
-        {/* Floating Navbar */}
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
-        </div>
-
-        <div className="container mx-auto px-4 py-8 pt-24">
-          <div className="max-w-2xl mx-auto">
-            <motion.div 
-              className="bg-card/80 backdrop-blur-sm border-4 border-black dark:border-white p-8 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <h2 className="text-3xl font-bold mb-6 tracking-tight">PROFILE SETTINGS</h2>
-              
-              {isTeamMemberLoading ? (
-                <p>Loading profile...</p>
-              ) : (
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="name" className="text-sm font-bold mb-2 block">NAME</Label>
-                    <Input 
-                      id="name" 
-                      value={formData.name} 
-                      onChange={(e) => handleInputChange("name", e.target.value)} 
-                      className="border-2 border-black dark:border-white font-mono" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="rollNo" className="text-sm font-bold mb-2 block">ROLL NO</Label>
-                    <Input 
-                      id="rollNo" 
-                      value={formData.rollNo} 
-                      onChange={(e) => handleInputChange("rollNo", e.target.value)} 
-                      className="border-2 border-black dark:border-white font-mono" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="branch" className="text-sm font-bold mb-2 block">BRANCH</Label>
-                    <Input 
-                      id="branch" 
-                      value={formData.branch} 
-                      onChange={(e) => handleInputChange("branch", e.target.value)} 
-                      className="border-2 border-black dark:border-white font-mono" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone" className="text-sm font-bold mb-2 block">PHONE NUMBER</Label>
-                    <Input 
-                      id="phone" 
-                      value={formData.phone} 
-                      onChange={(e) => handleInputChange("phone", e.target.value)} 
-                      className="border-2 border-black dark:border-white font-mono" 
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email" className="text-sm font-bold mb-2 block">EMAIL ADDRESS</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      value={formData.email} 
-                      onChange={(e) => handleInputChange("email", e.target.value)} 
-                      className="border-2 border-black dark:border-white font-mono" 
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleSave}
-                    className="w-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg py-3 border-2 border-black dark:border-white"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "SAVING..." : "SAVE CHANGES »"}
-                  </Button>
-                </div>
-              )}
-
-              {teamMember && (
-                <div className="mt-6 pt-6 border-t-2 border-black dark:border-white text-sm text-gray-600 dark:text-gray-400">
-                  <p>Last updated: {new Date(teamMember._creationTime).toLocaleDateString()}</p>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
 }
 
 export default function AdminSettings() {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AdminSettingsContent />
-    </ThemeProvider>
-  );
+  return <AdminSettingsContent />;
 }

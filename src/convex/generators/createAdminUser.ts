@@ -3,36 +3,25 @@ import { v } from "convex/values";
 
 export const createAdminUser = internalMutation({
   args: {},
-  returns: v.object({
-    adminId: v.id("admins"),
-    email: v.string(),
-  }),
   handler: async (ctx) => {
-    // Check if admin already exists
+    // Check if admin user already exists
     const existingAdmin = await ctx.db
-      .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", "admin@eventhub.com"))
-      .unique();
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", "admin@eventhub.com"))
+      .first();
 
     if (existingAdmin) {
-      return {
-        adminId: existingAdmin._id,
-        email: existingAdmin.email,
-      };
+      return { success: false, message: "Admin user already exists" };
     }
 
-    // Create new admin user
-    const adminId = await ctx.db.insert("admins", {
+    // Create admin user
+    const adminId = await ctx.db.insert("users", {
+      name: "Admin User",
       email: "admin@eventhub.com",
-      password: "admin123", // In production, this should be hashed
-      name: "EventHub Admin",
-      isActive: true,
-      lastLogin: Date.now(),
+      role: "admin",
+      emailVerificationTime: Date.now(),
     });
 
-    return {
-      adminId,
-      email: "admin@eventhub.com",
-    };
+    return { success: true, message: "Admin user created successfully", userId: adminId };
   },
 });

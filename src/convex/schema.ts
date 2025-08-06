@@ -1,156 +1,70 @@
 import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
-import { Infer, v } from "convex/values";
+import { v } from "convex/values";
+import { Infer } from "convex/values";
 
-// default user roles. can add / remove based on the project as needed
 export const ROLES = {
   ADMIN: "admin",
   USER: "user",
-  MEMBER: "member",
 } as const;
 
 export const roleValidator = v.union(
   v.literal(ROLES.ADMIN),
-  v.literal(ROLES.USER),
-  v.literal(ROLES.MEMBER),
+  v.literal(ROLES.USER)
 );
 export type Role = Infer<typeof roleValidator>;
 
 const schema = defineSchema({
-  // default auth tables using convex auth.
-  ...authTables, // do not remove or modify
-
-  // the users table is the default users table that is brought in by the authTables
+  ...authTables, 
   users: defineTable({
-    name: v.optional(v.string()),
-    image: v.optional(v.string()),
-    email: v.optional(v.string()),
+    name: v.optional(v.string()), 
+    image: v.optional(v.string()), 
+    email: v.optional(v.string()), 
     emailVerificationTime: v.optional(v.number()),
-    phone: v.optional(v.string()),
-    phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
-    
     role: v.optional(roleValidator),
-    
-    // Additional profile fields
     rollNo: v.optional(v.string()),
     branch: v.optional(v.string()),
     mobileNumber: v.optional(v.string()),
   })
     .index("email", ["email"]),
-
-  // Admin management table
-  admins: defineTable({
-    email: v.string(),
-    password: v.string(), // In production, this should be hashed
-    name: v.optional(v.string()),
-    isActive: v.boolean(),
-    lastLogin: v.optional(v.number()),
-  }).index("by_email", ["email"]),
-
-  // Team members table for admin profiles
-  teamMembers: defineTable({
-    adminId: v.optional(v.id("admins")), // Make adminId optional for regular volunteers
-    userId: v.optional(v.id("users")), // Add userId field to link to users table
-    name: v.string(),
-    rollNo: v.string(),
-    branch: v.string(),
-    phone: v.string(),
-    email: v.string(),
-    role: v.optional(v.string()),
-    isActive: v.optional(v.boolean()),
-    volunteerEvents: v.optional(v.array(v.id("events"))), // Events they're volunteering for
-  })
-    .index("by_admin_id", ["adminId"])
-    .index("by_email", ["email"]) // Add email index for uniqueness check
-    .index("by_user_id", ["userId"]), // Add index for userId
-
-  // Events table
+  
   events: defineTable({
     name: v.string(),
     description: v.string(),
     venue: v.string(),
-    startDate: v.number(), // timestamp
-    endDate: v.number(), // timestamp
+    startDate: v.number(),
+    endDate: v.number(),
     maxParticipants: v.optional(v.number()),
-    createdBy: v.union(v.id("users"), v.id("admins")),
+    createdBy: v.id("users"),
     status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
   }).index("by_creator", ["createdBy"])
     .index("by_start_date", ["startDate"])
     .index("by_status", ["status"]),
 
-  // Event volunteer assignments table
-  eventVolunteers: defineTable({
-    eventId: v.id("events"),
-    userId: v.id("users"),
-    assignedDate: v.number(), // timestamp
-    status: v.union(v.literal("assigned"), v.literal("confirmed"), v.literal("declined")),
-  }).index("by_event", ["eventId"])
-    .index("by_user", ["userId"])
-    .index("by_event_and_user", ["eventId", "userId"]),
-
-  // Event registrations table
   eventRegistrations: defineTable({
     eventId: v.id("events"),
     userId: v.id("users"),
-    registrationDate: v.number(), // timestamp
+    registrationDate: v.number(),
     status: v.union(v.literal("registered"), v.literal("attended"), v.literal("cancelled")),
   }).index("by_event", ["eventId"])
     .index("by_user", ["userId"])
     .index("by_user_and_event", ["userId", "eventId"]),
 
-  // Certificates table
   certificates: defineTable({
     eventId: v.id("events"),
     userId: v.id("users"),
     certificateUrl: v.optional(v.string()),
-    issuedDate: v.number(), // timestamp
+    issuedDate: v.number(),
     certificateNumber: v.string(),
   }).index("by_user", ["userId"])
     .index("by_event", ["eventId"])
     .index("by_user_and_event", ["userId", "eventId"]),
 
   admin_communication_messages: defineTable({
-    messageText: v.string(),
-    senderId: v.union(v.id("users"), v.id("admins")),
-    senderName: v.string(),
-    timestamp: v.number(),
-    attachments: v.array(
-      v.object({
-        url: v.string(),
-        name: v.string(),
-        type: v.union(
-          v.literal("image"),
-          v.literal("pdf"),
-          v.literal("video"),
-          v.literal("docx"),
-          v.literal("other"),
-        ),
-      }),
-    ),
-    reactions: v.optional(
-      v.record(v.string(), v.array(v.id("users"))),
-    ),
-    readBy: v.optional(v.array(v.id("users"))),
-  }).index("by_timestamp", ["timestamp"]),
-
-  private_messages: defineTable({
-    senderId: v.id("users"),
-    receiverId: v.id("users"), // Store as users ID only
-    message: v.string(),
-    timestamp: v.number(),
-    attachments: v.optional(v.array(v.object({
-      name: v.string(),
-      url: v.string(),
-      type: v.union(v.literal("image"), v.literal("video"), v.literal("pdf"), v.literal("docx"), v.literal("other")),
-      size: v.optional(v.number()),
-    }))),
-    reactions: v.optional(v.record(v.string(), v.array(v.id("users")))),
-    readBy: v.optional(v.array(v.id("users"))),
-  })
-    .index("by_participants", ["senderId", "receiverId"])
-    .index("by_receiver", ["receiverId"])
-    .index("by_sender", ["senderId"]),
+    authorId: v.id("users"),
+    content: v.string(),
+  }).index("by_author", ["authorId"]),
 
 },
 {

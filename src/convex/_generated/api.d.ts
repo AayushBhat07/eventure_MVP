@@ -27,6 +27,7 @@ import type * as migrations from "../migrations.js";
 import type * as privateMessages from "../privateMessages.js";
 import type * as team from "../team.js";
 import type * as users from "../users.js";
+import type * as utils_isAdmin from "../utils/isAdmin.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   privateMessages: typeof privateMessages;
   team: typeof team;
   users: typeof users;
+  "utils/isAdmin": typeof utils_isAdmin;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

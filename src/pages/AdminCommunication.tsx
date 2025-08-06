@@ -12,8 +12,16 @@ import BrutalistDock from "@/components/ui/brutalist-dock";
 import { Id } from "@/convex/_generated/dataModel";
 import { useNavigate } from "react-router";
 import EmojiPicker from 'emoji-picker-react';
-import { Home, Calendar, Users, Settings, FileText, Paperclip } from "lucide-react";
 import MessageWithReadReceipt from "@/components/ui/MessageWithReadReceipt";
+import { Protected } from "@/lib/protected-page";
+import { AdminNavBar } from "@/components/admin/admin-navbar";
+import { Home, Users, MessageSquare, Calendar } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { formatDistanceToNow } from "date-fns";
 
 interface AdminUser {
   _id: Id<"admins">;
@@ -28,6 +36,12 @@ interface AttachmentPreview {
   name: string;
   type: "image" | "pdf" | "video";
 }
+
+const messageSchema = z.object({
+  content: z.string().min(1, "Message cannot be empty"),
+});
+
+type MessageFormValues = z.infer<typeof messageSchema>;
 
 function AdminCommunicationContent() {
   const navigate = useNavigate();
@@ -451,9 +465,76 @@ function AdminCommunicationContent() {
 }
 
 export default function AdminCommunication() {
+  const adminNavItems = [
+    { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
+    { name: 'Team', url: '/admin-team', icon: Users },
+    { name: 'Events', url: '/admin-events', icon: Calendar },
+    { name: 'Communication', url: '/admin-communication', icon: MessageSquare },
+  ];
+
+  const messages = useQuery(api.communication.listMessages);
+  const sendMessage = useMutation(api.communication.sendMessage);
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<MessageFormValues>({
+    resolver: zodResolver(messageSchema),
+  });
+
+  const onSubmit: SubmitHandler<MessageFormValues> = async (data) => {
+    try {
+      await sendMessage({ content: data.content });
+      toast.success("Message sent successfully!");
+      reset();
+    } catch (error) {
+      toast.error("Failed to send message. Please try again.");
+    }
+  };
+
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AdminCommunicationContent />
-    </ThemeProvider>
+    <Protected>
+      <div className="min-h-screen bg-background">
+        <AdminNavBar items={adminNavItems} />
+        <div className="container mx-auto px-4 py-20">
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Communication Channel</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col h-[60vh]">
+                <div className="flex-1 overflow-y-auto pr-4 space-y-4">
+                  {messages?.map((message) => (
+                    <div key={message._id} className="flex items-start gap-4">
+                      <Avatar>
+                        <AvatarImage src={message.authorImage} />
+                        <AvatarFallback>{message.authorName?.charAt(0) || "A"}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-semibold">{message.authorName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(message._creationTime), { addSuffix: true })}
+                          </p>
+                        </div>
+                        <p className="text-foreground">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <form onSubmit={handleSubmit(onSubmit)} className="mt-4 pt-4 border-t">
+                  <div className="flex gap-2">
+                    <Textarea
+                      {...register("content")}
+                      placeholder="Type your message..."
+                      className="flex-1"
+                    />
+                    <Button type="submit">Send</Button>
+                  </div>
+                  {errors.content && <p className="text-destructive text-sm mt-1">{errors.content.message}</p>}
+                </form>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </Protected>
   );
 }
