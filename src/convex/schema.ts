@@ -75,6 +75,7 @@ const schema = defineSchema({
     department: v.optional(v.string()),
     branch: v.optional(v.string()),
     rollNo: v.optional(v.string()),
+    mobileNumber: v.optional(v.string()),
     joinedAt: v.number(),
   }).index("by_user_id", ["userId"])
     .index("by_email", ["email"]),

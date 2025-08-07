@@ -28,6 +28,7 @@ import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
 import type * as privateMessages from "../privateMessages.js";
 import type * as team from "../team.js";
+import type * as user_management from "../user_management.js";
 import type * as users from "../users.js";
 import type * as utils_isAdmin from "../utils/isAdmin.js";
 
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   privateMessages: typeof privateMessages;
   team: typeof team;
+  user_management: typeof user_management;
   users: typeof users;
   "utils/isAdmin": typeof utils_isAdmin;
 }>;
