@@ -1,44 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getCurrentUser } from "./users";
 import { Doc } from "./_generated/dataModel";
-
-export const getAllTeamMembers = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("teamMembers").collect();
-  },
-});
-
-export const addTeamMember = mutation({
-  args: {
-    userId: v.id("users"),
-    name: v.string(),
-    email: v.string(),
-    role: v.string(),
-    password: v.optional(v.string()),
-    department: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const user = await getCurrentUser(ctx);
-    if (!user || user.role !== "admin") {
-      throw new Error("Admin access required");
-    }
-
-    await ctx.db.insert("teamMembers", {
-      ...args,
-      joinedAt: Date.now(),
-    });
-  },
-});
-
-export const checkAdminProfile = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    return user && user.role === "admin" ? user : null;
-  },
-});
 
 // Helper function to determine if a team member's profile is complete
 const isTeamMemberProfileComplete = (member: Doc<"teamMembers">) => {
@@ -46,19 +8,51 @@ const isTeamMemberProfileComplete = (member: Doc<"teamMembers">) => {
     member.name &&
     member.branch &&
     member.rollNo &&
-    (member as any).mobileNumber
+    member.mobileNumber
   );
 };
 
-// Query to get all team members with their profile completion status
-export const getTeamMembersWithProfileStatus = query({
+// Helper function to determine if an admin's profile is complete
+const isAdminProfileComplete = (admin: Doc<"admins">) => {
+    return !!(
+        admin.name &&
+        admin.branch &&
+        admin.rollNo &&
+        admin.mobileNumber
+    );
+};
+
+// Keep the original query for backward compatibility
+export const getAllTeamMembers = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("teamMembers").collect();
+  },
+});
+
+// Query to get all team members and admins with their profile completion status
+export const getCombinedTeamWithProfileStatus = query({
   args: {},
   handler: async (ctx) => {
     const teamMembers = await ctx.db.query("teamMembers").collect();
-    return teamMembers.map((member) => ({
+    const admins = await ctx.db.query("admins").collect();
+
+    const formattedTeamMembers = teamMembers.map((member) => ({
         ...member,
+        type: 'teammember' as const,
         isProfileComplete: isTeamMemberProfileComplete(member),
     }));
+
+    const formattedAdmins = admins.map((admin) => ({
+        ...admin,
+        type: 'admin' as const,
+        isProfileComplete: isAdminProfileComplete(admin),
+    }));
+
+    const combined = [...formattedAdmins, ...formattedTeamMembers];
+    
+    // Sort by name, handling cases where name might be null or undefined
+    return combined.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   },
 });
 
@@ -81,7 +75,6 @@ export const updateTeamMemberProfile = mutation({
 
     const { teamMemberId, adminId, ...updateData } = args;
     
-    // Filter out undefined values
     const filteredUpdateData = Object.fromEntries(
       Object.entries(updateData).filter(([_, value]) => value !== undefined)
     );
@@ -89,3 +82,29 @@ export const updateTeamMemberProfile = mutation({
     await ctx.db.patch(teamMemberId, filteredUpdateData);
   },
 });
+
+// Mutation to update admin profile information
+export const updateAdminProfile = mutation({
+    args: {
+      adminToUpdateId: v.id("admins"),
+      name: v.optional(v.string()),
+      branch: v.optional(v.string()),
+      rollNo: v.optional(v.string()),
+      mobileNumber: v.optional(v.string()),
+      loggedInAdminId: v.id("admins"),
+    },
+    handler: async (ctx, args) => {
+      const loggedInAdmin = await ctx.db.get(args.loggedInAdminId);
+      if (!loggedInAdmin || loggedInAdmin.role !== "admin") {
+        throw new Error("Admin access required");
+      }
+  
+      const { adminToUpdateId, loggedInAdminId, ...updateData } = args;
+      
+      const filteredUpdateData = Object.fromEntries(
+        Object.entries(updateData).filter(([_, value]) => value !== undefined)
+      );
+  
+      await ctx.db.patch(adminToUpdateId, filteredUpdateData);
+    },
+  });
