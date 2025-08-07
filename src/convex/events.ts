@@ -295,6 +295,16 @@ export const getAllEventsWithDetails = query({
   },
 });
 
+export const getCompletedEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("events")
+      .withIndex("by_status", (q) => q.eq("status", "completed"))
+      .collect();
+  },
+});
+
 export const getUpcomingEvents = query({
   args: {},
   handler: async (ctx) => {

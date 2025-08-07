@@ -52,13 +52,13 @@ function AdminDashboardContent() {
   // Calculate real stats
   const totalEvents = allEvents?.length || 0;
   const upcomingEventsCount = upcomingEvents?.length || 0;
-  const completedEvents = allEvents?.filter(event => event.status === "completed").length || 0;
+  const completedEvents = useQuery(api.events.getCompletedEvents);
   const activeParticipants = 0; // This would need to be calculated from registrations
 
   const stats = [
     { title: "TOTAL EVENTS", value: totalEvents.toString(), icon: Calendar, color: "bg-yellow-400" },
     { title: "ACTIVE PARTICIPANTS", value: activeParticipants.toString(), icon: Users, color: "bg-green-400" },
-    { title: "COMPLETED EVENTS", value: completedEvents.toString(), icon: Target, color: "bg-blue-400" },
+    { title: "COMPLETED EVENTS", value: (completedEvents?.length || 0).toString(), icon: Target, color: "bg-blue-400" },
     { title: "UPCOMING EVENTS", value: upcomingEventsCount.toString(), icon: Clock, color: "bg-red-400" }
   ];
 
