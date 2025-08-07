@@ -14,6 +14,8 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as admin from "../admin.js";
+import type * as admin_actions from "../admin_actions.js";
+import type * as admin_creation from "../admin_creation.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as auth from "../auth.js";
 import type * as communication from "../communication.js";
@@ -39,6 +41,8 @@ import type * as utils_isAdmin from "../utils/isAdmin.js";
  */
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  admin_actions: typeof admin_actions;
+  admin_creation: typeof admin_creation;
   "auth/emailOtp": typeof auth_emailOtp;
   auth: typeof auth;
   communication: typeof communication;

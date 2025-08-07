@@ -36,6 +36,7 @@ import { MenuBar } from '@/components/ui/glow-menu';
 import { ThemeProvider, useTheme } from 'next-themes';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { useNavigate } from "react-router";
+import { CreateAdminModal } from '@/components/admin/CreateAdminModal';
 
 function AdminDashboardContent() {
   const navigate = useNavigate();
@@ -216,6 +217,11 @@ function AdminDashboardContent() {
         </div>
 
         <div className="container mx-auto px-4 py-8 pt-20">
+          {/* Add Create New Admin Button */}
+          <div className="mb-6 flex justify-end">
+            <CreateAdminModal />
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Current Event - Left Column */}
             <div className="lg:col-span-2">
