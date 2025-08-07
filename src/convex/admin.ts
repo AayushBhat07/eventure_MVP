@@ -10,25 +10,45 @@ export const adminLogin = action({
     password: v.string(),
   },
   handler: async (ctx, args): Promise<{ success: boolean; message: string; user?: any }> => {
-    let existingUser: any = await ctx.runQuery(internal.admin_creation.getAdminByEmail, { email: args.email });
+    const adminUser = await ctx.runQuery(internal.admin_creation.getAdminByEmail, { email: args.email });
 
-    if (!existingUser) {
-        existingUser = await ctx.runQuery(internal.admin_creation.getTeamMemberByEmail, { email: args.email });
-    }
-
-    if (!existingUser) {
+    if (adminUser) {
+      const isPasswordValid = await bcrypt.compare(args.password, adminUser.password);
+      if (!isPasswordValid) {
+        return { success: false, message: "Invalid credentials" };
+      }
+      const userToReturn = {
+        _id: adminUser._id,
+        _creationTime: adminUser._creationTime,
+        email: adminUser.email,
+        role: "admin", // Force role to be correct
+        name: adminUser.name,
+      };
+      return { success: true, message: "Login successful", user: userToReturn };
+    } 
+    
+    const teamMember = await ctx.runQuery(internal.admin_creation.getTeamMemberByEmail, { email: args.email });
+    if (!teamMember || !teamMember.password) {
       return { success: false, message: "Invalid credentials" };
     }
-
-    const isPasswordValid = await bcrypt.compare(args.password, existingUser.password);
-
+    const isPasswordValid = await bcrypt.compare(args.password, teamMember.password);
     if (!isPasswordValid) {
       return { success: false, message: "Invalid credentials" };
     }
     
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...user } = existingUser;
-
-    return { success: true, message: "Login successful", user };
+    const userToReturn = {
+      _id: teamMember._id,
+      _creationTime: teamMember._creationTime,
+      email: teamMember.email,
+      role: "teammember", // Force role to be correct
+      name: teamMember.name,
+      userId: teamMember.userId,
+      department: teamMember.department,
+      branch: teamMember.branch,
+      rollNo: teamMember.rollNo,
+      joinedAt: teamMember.joinedAt,
+    };
+    
+    return { success: true, message: "Login successful", user: userToReturn };
   },
 });

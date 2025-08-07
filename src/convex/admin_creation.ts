@@ -60,6 +60,7 @@ export const createAdminInternal = internalMutation({
         email: args.email,
         password: args.passwordHash,
         name: undefined,
+        role: "admin",
       });
 
       return {
@@ -73,7 +74,7 @@ export const createAdminInternal = internalMutation({
         userId: "" as any, // This will be updated when they first sign in
         name: args.email.split("@")[0], // Use email prefix as default name
         email: args.email,
-        role: "TeamMember",
+        role: "teammember",
         password: args.passwordHash,
         joinedAt: Date.now(),
       });

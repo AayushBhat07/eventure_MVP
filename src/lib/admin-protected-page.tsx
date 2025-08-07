@@ -1,31 +1,26 @@
-import { useNavigate } from "react-router";
-import { useEffect, useState } from "react";
+import { Navigate } from "react-router";
 
 export function AdminProtected({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const storedUserJSON = sessionStorage.getItem("adminUser");
 
-  useEffect(() => {
-    const storedUser = sessionStorage.getItem("adminUser");
-    
-    if (!storedUser) {
-      navigate("/admin-signIn");
-      return;
+  if (storedUserJSON) {
+    try {
+      const user = JSON.parse(storedUserJSON);
+      const allowedRoles = ["admin", "teammember"];
+      const userRole = user.role ? String(user.role).toLowerCase().trim() : "";
+      
+      if (allowedRoles.includes(userRole)) {
+        // User is authenticated and authorized
+        return <>{children}</>;
+      }
+    } catch (e) {
+      console.error("AdminProtected: Failed to parse user from session storage.", e);
+      // Proceed to cleanup and redirect
     }
-
-    const user = JSON.parse(storedUser);
-    const allowedRoles = ["admin", "teammember"];
-
-    if (allowedRoles.includes(user.role)) {
-      setIsAuthorized(true);
-    } else {
-      navigate("/admin-signIn");
-    }
-  }, [navigate]);
-
-  if (!isAuthorized) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  return <>{children}</>;
+  // If we reach here, the user is not authorized.
+  // Clean up any potentially corrupted session data and redirect.
+  sessionStorage.removeItem("adminUser");
+  return <Navigate to="/admin-signIn" replace />;
 }

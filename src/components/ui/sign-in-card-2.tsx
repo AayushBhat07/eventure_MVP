@@ -43,21 +43,18 @@ export function Component() {
     try {
       const result = await adminLogin({ email, password });
 
-      if (result.success) {
+      if (result.success && result.user) {
         toast.success(result.message);
-        // Store user info in session storage for simple session management
-        if (result.user) {
-          sessionStorage.setItem("adminUser", JSON.stringify(result.user));
-        }
-        // Navigate to admin dashboard after a short delay to allow state to update
-        setTimeout(() => navigate("/admin-dashboard"), 100);
+        sessionStorage.setItem("adminUser", JSON.stringify(result.user));
+        // Force a hard reload to ensure all state is cleared and session is read fresh.
+        window.location.href = "/admin-dashboard";
       } else {
-        toast.error(result.message);
+        toast.error(result.message || "Login failed. Please try again.");
+        setIsLoading(false);
       }
     } catch (error) {
       toast.error("An unexpected error occurred. Please try again.");
       console.error("Admin login error:", error);
-    } finally {
       setIsLoading(false);
     }
   };
