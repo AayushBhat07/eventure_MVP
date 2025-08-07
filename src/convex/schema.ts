@@ -71,6 +71,7 @@ const schema = defineSchema({
     name: v.string(),
     email: v.string(),
     role: v.string(),
+    password: v.optional(v.string()),
     department: v.optional(v.string()),
     branch: v.optional(v.string()),
     rollNo: v.optional(v.string()),

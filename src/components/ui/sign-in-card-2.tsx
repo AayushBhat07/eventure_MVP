@@ -45,9 +45,9 @@ export function Component() {
 
       if (result.success) {
         toast.success(result.message);
-        // Store admin info in session storage for simple session management
-        if (result.admin) {
-          sessionStorage.setItem("adminUser", JSON.stringify(result.admin));
+        // Store user info in session storage for simple session management
+        if (result.user) {
+          sessionStorage.setItem("adminUser", JSON.stringify(result.user));
         }
         navigate("/admin-dashboard");
       } else {

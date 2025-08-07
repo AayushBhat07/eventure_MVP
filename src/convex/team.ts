@@ -15,6 +15,7 @@ export const addTeamMember = mutation({
     name: v.string(),
     email: v.string(),
     role: v.string(),
+    password: v.optional(v.string()),
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

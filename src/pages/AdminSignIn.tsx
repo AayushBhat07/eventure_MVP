@@ -33,11 +33,11 @@ export default function AdminSignIn() {
         password: password.trim(),
       });
 
-      if (result.success && result.admin) {
+      if (result.success && result.user) {
         toast.success(result.message);
         
-        // Store admin data in session storage
-        sessionStorage.setItem("adminUser", JSON.stringify(result.admin));
+        // Store user data in session storage
+        sessionStorage.setItem("adminUser", JSON.stringify(result.user));
         
         // Navigate to admin dashboard
         navigate("/admin-dashboard");
