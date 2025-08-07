@@ -39,7 +39,7 @@ export default function AdminSignIn() {
         sessionStorage.setItem("adminUser", JSON.stringify(result.user));
         
         // Navigate to admin dashboard
-        navigate("/admin-dashboard");
+        window.location.href = "/admin-dashboard";
       } else {
         toast.error(result.message);
       }

@@ -49,7 +49,7 @@ export function Component() {
         if (result.user) {
           sessionStorage.setItem("adminUser", JSON.stringify(result.user));
         }
-        navigate("/admin-dashboard");
+        window.location.href = "/admin-dashboard";
       } else {
         toast.error(result.message);
       }
