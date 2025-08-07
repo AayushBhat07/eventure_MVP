@@ -14,7 +14,8 @@ export function AdminProtected({ children, requiredRole }: { children: React.Rea
 
     const user = JSON.parse(storedUser);
 
-    if (requiredRole && user.role !== requiredRole) {
+    const allowedRoles = ["admin", "teammember"];
+    if (requiredRole && !allowedRoles.includes(user.role)) {
       navigate("/admin-signIn"); // Or an unauthorized page
       return;
     }
