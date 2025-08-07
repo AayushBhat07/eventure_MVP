@@ -373,6 +373,8 @@ function AdminDashboardContent() {
                             className="border-2 border-black dark:border-white font-mono text-base p-3"
                             required
                             disabled={isSubmitting}
+                            value={eventTime}
+                            onChange={(e) => setEventTime(e.target.value)}
                           />
                         </div>
                       </div>
