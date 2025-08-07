@@ -19,7 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard.tsx";
 import AdminEvents from "./pages/AdminEvents.tsx";
 import AdminCommunication from "./pages/AdminCommunication.tsx";
 import AdminSettings from "./pages/AdminSettings.tsx";
-import AdminTeam from "./pages/AdminTeam.tsx";
+import AdminTeam from "@/pages/AdminTeam.tsx";
 import { Protected } from "@/lib/protected-page.tsx";
 import { AdminProtected } from "@/lib/admin-protected-page.tsx";
 
