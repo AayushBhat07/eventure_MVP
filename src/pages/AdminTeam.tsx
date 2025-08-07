@@ -14,12 +14,22 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Loader2 } from 'lucide-react';
 
 type TeamUser = NonNullable<ReturnType<typeof useQuery<typeof api.team.getCombinedTeamWithProfileStatus>>>[0];
 
 // Brutalist-style Card for each team user
-const TeamUserCard = ({ user, onEdit }: { user: TeamUser; onEdit: (user: TeamUser) => void }) => {
+const TeamUserCard = ({ user, onEdit, onDelete }: { user: TeamUser; onEdit: (user: TeamUser) => void; onDelete: (user: TeamUser) => void; }) => {
   return (
     <div className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] p-6 flex flex-col justify-between font-mono">
       <div>
@@ -45,12 +55,20 @@ const TeamUserCard = ({ user, onEdit }: { user: TeamUser; onEdit: (user: TeamUse
           <p><span className="font-bold">MOBILE:</span> {user.mobileNumber || 'N/A'}</p>
         </div>
       </div>
-      <Button
-        onClick={() => onEdit(user)}
-        className="w-full mt-6 bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg"
-      >
-        [ EDIT PROFILE ]
-      </Button>
+      <div className="flex space-x-2 mt-6">
+        <Button
+          onClick={() => onEdit(user)}
+          className="w-full bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg"
+        >
+          [ EDIT PROFILE ]
+        </Button>
+        <Button
+          onClick={() => onDelete(user)}
+          className="w-auto bg-red-500 text-white border-2 border-black rounded-none hover:bg-red-700 font-bold text-lg px-4"
+        >
+          [ DELETE ]
+        </Button>
+      </div>
     </div>
   );
 };
@@ -184,8 +202,11 @@ const EditProfileModal = ({
 
 export default function AdminTeam() {
   const teamUsers = useQuery(api.team.getCombinedTeamWithProfileStatus);
+  const deleteUserMutation = useMutation(api.team.deleteUser);
   const [selectedUser, setSelectedUser] = useState<TeamUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<TeamUser | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleEdit = (user: TeamUser) => {
     setSelectedUser(user);
@@ -195,6 +216,48 @@ export default function AdminTeam() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedUser(null);
+  };
+
+  const handleDeleteClick = (user: TeamUser) => {
+    setUserToDelete(user);
+  };
+
+  const handleCancelDelete = () => {
+    setUserToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const adminUserString = sessionStorage.getItem('adminUser');
+      if (!adminUserString) {
+        toast.error('Authentication error. Please sign in again.');
+        setIsDeleting(false);
+        return;
+      }
+      const loggedInAdmin = JSON.parse(adminUserString);
+      if (loggedInAdmin.role !== 'admin') {
+        toast.error('Authorization error. Admin access required.');
+        setIsDeleting(false);
+        return;
+      }
+
+      await deleteUserMutation({
+        userIdToDelete: userToDelete._id,
+        userType: userToDelete.type,
+        loggedInAdminId: loggedInAdmin._id,
+      });
+
+      toast.success(`User ${userToDelete.name} has been deleted.`);
+      setUserToDelete(null);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'Failed to delete user.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (teamUsers === undefined) {
@@ -215,11 +278,39 @@ export default function AdminTeam() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {teamUsers.map((user) => (
-            <TeamUserCard key={user._id} user={user} onEdit={handleEdit} />
+            <TeamUserCard key={user._id} user={user} onEdit={handleEdit} onDelete={handleDeleteClick} />
           ))}
         </div>
       )}
       <EditProfileModal user={selectedUser} isOpen={isModalOpen} onClose={handleCloseModal} />
+      <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && handleCancelDelete()}>
+        <AlertDialogContent className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] font-mono rounded-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-bold uppercase tracking-tighter">
+              Are you absolutely sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              This action cannot be undone. This will permanently delete the user account for{' '}
+              <span className="font-bold">{userToDelete?.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="!justify-start pt-4">
+            <AlertDialogCancel 
+                onClick={handleCancelDelete}
+                className="border-2 border-black rounded-none font-bold text-lg"
+            >
+                CANCEL
+            </AlertDialogCancel>
+            <AlertDialogAction
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="bg-red-500 text-white border-2 border-black rounded-none hover:bg-red-700 font-bold text-lg"
+            >
+                {isDeleting ? <Loader2 className="animate-spin" /> : 'YES, DELETE USER'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

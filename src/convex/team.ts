@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 
 // Helper function to determine if a team member's profile is complete
 const isTeamMemberProfileComplete = (member: Doc<"teamMembers">) => {
@@ -108,3 +108,30 @@ export const updateAdminProfile = mutation({
       await ctx.db.patch(adminToUpdateId, filteredUpdateData);
     },
   });
+
+// Mutation to delete a user (admin or team member)
+export const deleteUser = mutation({
+  args: {
+    userIdToDelete: v.string(), // Using v.string() to accept both Id<"admins"> and Id<"teamMembers">
+    userType: v.union(v.literal("admin"), v.literal("teammember")),
+    loggedInAdminId: v.id("admins"),
+  },
+  handler: async (ctx, args) => {
+    const loggedInAdmin = await ctx.db.get(args.loggedInAdminId);
+    if (!loggedInAdmin || loggedInAdmin.role !== "admin") {
+      throw new Error("Authorization failed: Only admins can delete users.");
+    }
+
+    if (args.userIdToDelete === args.loggedInAdminId) {
+        throw new Error("Admins cannot delete their own accounts.");
+    }
+
+    if (args.userType === 'admin') {
+        await ctx.db.delete(args.userIdToDelete as Id<"admins">);
+    } else { // userType === 'teammember'
+        await ctx.db.delete(args.userIdToDelete as Id<"teamMembers">);
+    }
+
+    return { success: true };
+  },
+});
