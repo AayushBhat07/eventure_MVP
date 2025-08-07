@@ -38,11 +38,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/event/:eventId" element={<Protected><EventInfo /></Protected>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-signIn" element={<AdminSignIn />} />
-            <Route path="/admin-dashboard" element={<AdminProtected requiredRole="admin"><AdminDashboard /></AdminProtected>} />
-            <Route path="/admin-events" element={<AdminProtected requiredRole="admin"><AdminEvents /></AdminProtected>} />
-            <Route path="/admin-team" element={<AdminProtected requiredRole="admin"><AdminTeam /></AdminProtected>} />
-            <Route path="/admin-communication" element={<AdminProtected requiredRole="admin"><AdminCommunication /></AdminProtected>} />
-            <Route path="/admin-settings" element={<AdminProtected requiredRole="admin"><AdminSettings /></AdminProtected>} />
+            <Route path="/admin-dashboard" element={<AdminProtected><AdminDashboard /></AdminProtected>} />
+            <Route path="/admin-events" element={<AdminProtected><AdminEvents /></AdminProtected>} />
+            <Route path="/admin-team" element={<AdminProtected><AdminTeam /></AdminProtected>} />
+            <Route path="/admin-communication" element={<AdminProtected><AdminCommunication /></AdminProtected>} />
+            <Route path="/admin-settings" element={<AdminProtected><AdminSettings /></AdminProtected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

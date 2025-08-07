@@ -49,7 +49,8 @@ export function Component() {
         if (result.user) {
           sessionStorage.setItem("adminUser", JSON.stringify(result.user));
         }
-        window.location.href = "/admin-dashboard";
+        // Navigate to admin dashboard after a short delay to allow state to update
+        setTimeout(() => navigate("/admin-dashboard"), 100);
       } else {
         toast.error(result.message);
       }

@@ -38,8 +38,8 @@ export default function AdminSignIn() {
         // Store user data in session storage
         sessionStorage.setItem("adminUser", JSON.stringify(result.user));
         
-        // Navigate to admin dashboard
-        window.location.href = "/admin-dashboard";
+        // Navigate to admin dashboard after a short delay to allow state to update
+        setTimeout(() => navigate("/admin-dashboard"), 100);
       } else {
         toast.error(result.message);
       }
