@@ -26,6 +26,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Loader2, Users, UserCheck, UserX, PlusCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MenuBar } from "@/components/ui/glow-menu";
+import { ThemeProvider, useTheme } from "next-themes";
+import { BackgroundPaths } from "@/components/ui/background-paths";
+import { useNavigate } from "react-router";
+import { Settings, Home, Calendar } from "lucide-react";
 
 type TeamUser = NonNullable<ReturnType<typeof useQuery<typeof api.team.getCombinedTeamWithProfileStatus>>>[0];
 
@@ -299,7 +304,7 @@ const CreateUserModal = ({
   );
 };
 
-export default function AdminTeam() {
+function AdminTeamContent() {
   const teamUsers = useQuery(api.team.getCombinedTeamWithProfileStatus);
   const deleteUserMutation = useMutation(api.team.deleteUser);
   const [selectedUser, setSelectedUser] = useState<TeamUser | null>(null);
@@ -385,67 +390,150 @@ export default function AdminTeam() {
     );
   }
 
-  return (
-    <div className="p-6 md:p-10 bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-5xl font-bold uppercase tracking-tighter font-mono">Team Management</h1>
-        <Button 
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg flex items-center space-x-2"
-        >
-          <PlusCircle className="h-6 w-6" />
-          <span>[ CREATE USER ]</span>
-        </Button>
-      </div>
-      
-      {/* Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <StatsCard icon={Users} title="Total Users" value={stats.total} />
-        <StatsCard icon={UserCheck} title="Complete Profiles" value={stats.complete} className="bg-green-100" />
-        <StatsCard icon={UserX} title="Incomplete Profiles" value={stats.incomplete} className="bg-red-100" />
-      </div>
+  const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const [activeMenuItem, setActiveMenuItem] = useState("Team");
 
-      {teamUsers.length === 0 ? (
-        <div className="text-center py-20 border-4 border-dashed border-black">
-            <p className="font-mono text-2xl font-bold">NO TEAM MEMBERS OR ADMINS FOUND.</p>
+  const menuItems = [
+    { name: "Dashboard", label: "Dashboard", href: "/admin-dashboard", icon: Home, gradient: "from-blue-500 to-cyan-500", iconColor: "text-blue-500" },
+    { name: "Events", label: "Events", href: "/admin-events", icon: Calendar, gradient: "from-green-500 to-emerald-500", iconColor: "text-green-500" },
+    { name: "Team", label: "Team", href: "/admin-team", icon: Users, gradient: "from-purple-500 to-violet-500", iconColor: "text-purple-500" },
+    { name: "Settings", label: "Settings", href: "/admin-settings", icon: Settings, gradient: "from-red-500 to-orange-500", iconColor: "text-red-500" },
+  ];
+
+  const handleMenuItemClick = (itemName: string) => {
+    setActiveMenuItem(itemName);
+    switch (itemName) {
+      case "Dashboard":
+        navigate("/admin-dashboard");
+        break;
+      case "Events":
+        navigate("/admin-events");
+        break;
+      case "Team":
+        navigate("/admin-team");
+        break;
+      case "Settings":
+        navigate("/admin-settings");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).toUpperCase();
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-mono relative">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
+      </div>
+      <div className="relative z-10">
+        {/* Header Section (same style as AdminDashboard) */}
+        <header className="border-b-2 border-black dark:border-white/20 p-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">TEAM ADMIN PANEL</h1>
+            <div className="flex items-center gap-4 md:gap-6">
+              <div className="text-right hidden md:block">
+                <div className="text-sm font-bold">{getCurrentDate()}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
+                AB
+              </div>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 border-2 border-black dark:border-white"
+              >
+                {theme === "dark" ? "Light" : "Dark"}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Floating Navbar */}
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
+          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {teamUsers.map((user: any) => (
-            <TeamUserCard key={user._id} user={user} onEdit={handleEdit} onDelete={handleDeleteClick} />
-          ))}
+
+        {/* Main content container below navbar */}
+        <div className="container mx-auto px-4 py-8 pt-20">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-5xl font-bold uppercase tracking-tighter font-mono">Team Management</h1>
+            <Button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-black text-white border-2 border-black rounded-none hover:bg-gray-800 font-bold text-lg flex items-center space-x-2"
+            >
+              <PlusCircle className="h-6 w-6" />
+              <span>[ CREATE USER ]</span>
+            </Button>
+          </div>
+          
+          {/* Stats Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <StatsCard icon={Users} title="Total Users" value={stats.total} />
+            <StatsCard icon={UserCheck} title="Complete Profiles" value={stats.complete} className="bg-green-100" />
+            <StatsCard icon={UserX} title="Incomplete Profiles" value={stats.incomplete} className="bg-red-100" />
+          </div>
+
+          {teamUsers.length === 0 ? (
+            <div className="text-center py-20 border-4 border-dashed border-black">
+                <p className="font-mono text-2xl font-bold">NO TEAM MEMBERS OR ADMINS FOUND.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {teamUsers.map((user: any) => (
+                <TeamUserCard key={user._id} user={user} onEdit={handleEdit} onDelete={handleDeleteClick} />
+              ))}
+            </div>
+          )}
+          <EditProfileModal user={selectedUser} isOpen={isEditModalOpen} onClose={handleCloseEditModal} />
+          <CreateUserModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+          <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && handleCancelDelete()}>
+            <AlertDialogContent className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] font-mono rounded-none">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-2xl font-bold uppercase tracking-tighter">
+                  Are you absolutely sure?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-base">
+                  This action cannot be undone. This will permanently delete the user account for{' '}
+                  <span className="font-bold">{userToDelete?.name}</span>.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="!justify-start pt-4">
+                <AlertDialogCancel 
+                    onClick={handleCancelDelete}
+                    className="border-2 border-black rounded-none font-bold text-lg"
+                >
+                    CANCEL
+                </AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={handleConfirmDelete}
+                    disabled={isDeleting}
+                    className="bg-red-500 text-white border-2 border-black rounded-none hover:bg-red-700 font-bold text-lg"
+                >
+                    {isDeleting ? <Loader2 className="animate-spin" /> : 'YES, DELETE USER'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
-      )}
-      <EditProfileModal user={selectedUser} isOpen={isEditModalOpen} onClose={handleCloseEditModal} />
-      <CreateUserModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
-      <AlertDialog open={!!userToDelete} onOpenChange={(isOpen) => !isOpen && handleCancelDelete()}>
-        <AlertDialogContent className="bg-white text-black border-4 border-black shadow-[8px_8px_0px_#000] font-mono rounded-none">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-bold uppercase tracking-tighter">
-              Are you absolutely sure?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
-              This action cannot be undone. This will permanently delete the user account for{' '}
-              <span className="font-bold">{userToDelete?.name}</span>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="!justify-start pt-4">
-            <AlertDialogCancel 
-                onClick={handleCancelDelete}
-                className="border-2 border-black rounded-none font-bold text-lg"
-            >
-                CANCEL
-            </AlertDialogCancel>
-            <AlertDialogAction
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="bg-red-500 text-white border-2 border-black rounded-none hover:bg-red-700 font-bold text-lg"
-            >
-                {isDeleting ? <Loader2 className="animate-spin" /> : 'YES, DELETE USER'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </div>
     </div>
+  );
+}
+
+export default function AdminTeam() {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AdminTeamContent />
+    </ThemeProvider>
   );
 }
