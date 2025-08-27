@@ -56,7 +56,7 @@ export const BrutalistDock: React.FC<BrutalistDockProps> = ({ currentUser: propC
 
     // Add team members
     if (teamMembers) {
-      teamMembers.forEach(member => {
+      teamMembers.forEach((member: any) => {
         // Don't duplicate current user (compare as strings since IDs might be different types)
         if (currentUser && String(member._id) === String(currentUser._id)) return;
         

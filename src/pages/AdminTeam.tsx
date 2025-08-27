@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
@@ -231,7 +231,7 @@ const CreateUserModal = ({
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'teammember'>('teammember');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const createUserAction = useMutation(api.user_creation.createUser);
+  const createUserAction = useAction(api.user_creation.createUser);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,7 +364,7 @@ export default function AdminTeam() {
   const stats = React.useMemo(() => {
     if (!teamUsers) return { total: 0, complete: 0, incomplete: 0 };
     
-    const complete = teamUsers.filter(user => user.isProfileComplete).length;
+    const complete = teamUsers.filter((user: any) => user.isProfileComplete).length;
     const incomplete = teamUsers.length - complete;
     
     return {
@@ -411,7 +411,7 @@ export default function AdminTeam() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {teamUsers.map((user) => (
+          {teamUsers.map((user: any) => (
             <TeamUserCard key={user._id} user={user} onEdit={handleEdit} onDelete={handleDeleteClick} />
           ))}
         </div>

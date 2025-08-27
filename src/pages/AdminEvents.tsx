@@ -226,7 +226,7 @@ function AdminEventsContent() {
       return;
     }
 
-    const data = allEvents.map(event => ({
+    const data = allEvents.map((event: any) => ({
       name: event.name,
       venue: event.venue,
       startDate: new Date(event.startDate).toLocaleString(),
@@ -464,7 +464,7 @@ function AdminEventsContent() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {allEvents.map((event) => (
+              {allEvents.map((event: any) => (
                 <Card key={event._id} className="border-4 border-black dark:border-white bg-card/80 backdrop-blur-sm">
                   <CardContent className="p-6">
                     <h3 className="text-xl font-bold mb-2 tracking-tighter uppercase">{event.name}</h3>
@@ -645,7 +645,7 @@ function AdminEventsContent() {
                         </p>
                       </div>
                     ) : (
-                      teamMembers.map((volunteer) => (
+                      teamMembers.map((volunteer: any) => (
                         <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                           <button
                             type="button"
@@ -803,7 +803,7 @@ function AdminEventsContent() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {participants.map((participant) => (
+                        {participants.map((participant: any) => (
                           <TableRow key={participant._id}>
                             <TableCell className="font-medium border-r-2 border-black dark:border-white">{participant.user?.name || 'N/A'}</TableCell>
                             <TableCell className="border-r-2 border-black dark:border-white">{participant.user?.rollNo || 'N/A'}</TableCell>

@@ -137,7 +137,7 @@ export default function PrivateDMModal({ isOpen, onClose, recipientId, recipient
                   <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                messages.map((message) => (
+                messages.map((message: any) => (
                   <div
                     key={message._id}
                     className={`flex ${message.senderId === currentUser?._id ? 'justify-end' : 'justify-start'}`}

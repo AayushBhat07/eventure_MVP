@@ -174,7 +174,7 @@ function AdminDashboardContent() {
   };
 
   // Format events for calendar
-  const calendarEvents = allEvents?.map(event => ({
+  const calendarEvents = allEvents?.map((event: any) => ({
     date: new Date(event.startDate).toISOString().split('T')[0],
     title: event.name
   })) || [];
@@ -332,7 +332,7 @@ function AdminDashboardContent() {
                       </p>
                     </div>
                   ) : (
-                    teamMembers.map((volunteer) => (
+                    teamMembers.map((volunteer: any) => (
                       <div key={volunteer.userId} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                         <button
                           type="button"
