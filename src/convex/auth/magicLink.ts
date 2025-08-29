@@ -1,15 +1,15 @@
 import { Email } from "@convex-dev/auth/providers/Email";
-import { alphabet, generateRandomString } from "oslo/crypto";
+import { generateRandomString, alphabet } from "oslo/crypto";
 import { createEmailProvider } from "./emailProvider";
 import { internal } from "../_generated/api";
 
-export const emailOtp = Email({
-  id: "email-otp",
+export const magicLink = Email({
+  id: "magic-link",
   maxAge: 60 * 15, // 15 minutes
   
-  // Generate a secure 6-digit OTP
+  // Generate a secure token for magic links
   generateVerificationToken() {
-    return generateRandomString(6, alphabet("0-9"));
+    return generateRandomString(32, alphabet("a-z", "A-Z", "0-9"));
   },
   
   async sendVerificationRequest({ identifier: email, provider, token, request }) {
@@ -20,13 +20,13 @@ export const emailOtp = Email({
       if (ctxAny?.runQuery) {
         const rateLimitCheck = await ctxAny.runQuery(internal.auth.rateLimit.checkRateLimit, {
           identifier: email,
-          type: "otp",
+          type: "magic_link",
         });
 
         if (!rateLimitCheck.isAllowed) {
           const resetTimeMinutes = Math.ceil((rateLimitCheck.resetTime - Date.now()) / (1000 * 60));
           throw new Error(
-            `Too many OTP requests. Please try again in ${resetTimeMinutes} minutes. ` +
+            `Too many magic link requests. Please try again in ${resetTimeMinutes} minutes. ` +
             `Remaining attempts: ${rateLimitCheck.remainingAttempts}`
           );
         }
@@ -34,31 +34,42 @@ export const emailOtp = Email({
         // Record the attempt as pending
         await ctxAny.runMutation(internal.auth.rateLimit.recordAttempt, {
           identifier: email,
-          type: "otp",
+          type: "magic_link",
           success: false,
         });
       }
 
-      // Send OTP using the configured email provider
+      // Construct the magic link URL
+      const urlStr = typeof request?.url === "string" ? request.url : "";
+      let origin = "";
+      try {
+        origin = new URL(urlStr).origin;
+      } catch (_) {
+        // ignore
+      }
+      const baseUrl = process.env.SITE_URL || origin || "http://localhost:5173";
+      const magicLinkUrl = `${baseUrl}/auth?token=${token}&email=${encodeURIComponent(email)}`;
+
+      // Send magic link using the configured email provider
       const emailProvider = createEmailProvider();
       const appName = process.env.VLY_APP_NAME || "a vly.ai application";
-      await emailProvider.sendOtp(email, token, appName);
+      await emailProvider.sendMagicLink(email, magicLinkUrl, appName);
 
-      // Mark attempt as successful if context is available
+      // Update the attempt as successful if context is available
       if (ctxAny?.runMutation) {
         await ctxAny.runMutation(internal.auth.rateLimit.recordAttempt, {
           identifier: email,
-          type: "otp",
+          type: "magic_link",
           success: true,
         });
       }
 
     } catch (error) {
-      console.error("Failed to send OTP:", error);
+      console.error("Failed to send magic link:", error);
       throw new Error(
         error instanceof Error 
           ? error.message 
-          : "Failed to send verification code. Please try again."
+          : "Failed to send magic link. Please try again."
       );
     }
   },

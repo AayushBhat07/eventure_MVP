@@ -50,7 +50,7 @@ const UnauthenticatedButton = ({ useModal, trigger }: AuthButtonProps) => {
           </DialogTrigger>
           <DialogContent className="bg-transparent border-none shadow-none">
             <DialogTitle></DialogTitle>
-            <AuthCard onAuthSuccess={handleAuthSuccess} />
+            <AuthCard />
           </DialogContent>
         </Dialog>
       ) : trigger ? (

@@ -2,7 +2,8 @@
 
 import { convexAuth } from "@convex-dev/auth/server";
 import { emailOtp } from "./auth/emailOtp";
+import { magicLink } from "./auth/magicLink";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [emailOtp],
+  providers: [emailOtp, magicLink],
 });

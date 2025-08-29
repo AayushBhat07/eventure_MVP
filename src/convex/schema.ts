@@ -28,6 +28,16 @@ const schema = defineSchema({
     mobileNumber: v.optional(v.string()),
   })
     .index("email", ["email"]),
+
+  // Rate limiting table for auth attempts
+  authRateLimits: defineTable({
+    identifier: v.string(), // email or IP address
+    type: v.union(v.literal("otp"), v.literal("magic_link"), v.literal("login")),
+    timestamp: v.number(),
+    success: v.boolean(),
+  })
+    .index("by_identifier_and_type", ["identifier", "type"])
+    .index("by_timestamp", ["timestamp"]),
   
   events: defineTable({
     name: v.string(),

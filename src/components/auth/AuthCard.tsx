@@ -1,237 +1,211 @@
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
-import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/use-auth";
-import { ArrowRight, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { Mail, Shield, Sparkles } from "lucide-react";
 
-interface AuthCardProps {
-  onAuthSuccess?: () => void;
-}
-
-export function AuthCard({ onAuthSuccess }: AuthCardProps) {
-  const { signIn } = useAuth();
-  const [step, setStep] = useState<"signIn" | { email: string }>("signIn");
-  const [otp, setOtp] = useState("");
+export function AuthCard() {
+  const { signIn } = useAuthActions();
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [authMethod, setAuthMethod] = useState<"otp" | "magic-link">("otp");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
 
-  const navigate = useNavigate();
+  const handleSendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
+    }
 
-  const handleEmailSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
     setIsLoading(true);
-    setError(null);
     try {
-      const formData = new FormData(event.currentTarget);
-      await signIn("email-otp", formData);
-      setStep({ email: formData.get("email") as string });
-      setIsLoading(false);
+      await signIn("email-otp", { email });
+      setStep("code");
+      toast.success("Verification code sent to your email");
     } catch (error) {
-      console.error("Email sign-in error:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to send verification code. Please try again.",
+      console.error("Failed to send code:", error);
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to send verification code"
       );
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOtpSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData(event.currentTarget);
-      await signIn("email-otp", formData);
-
-      console.log("signed in");
-
-      if (onAuthSuccess) {
-        onAuthSuccess();
-      }
-
-      navigate(searchParams.get("redirect") || "/dashboard");
-    } catch (error) {
-      console.error("OTP verification error:", error);
-
-      setError("The verification code you entered is incorrect.");
-      setIsLoading(false);
-
-      setOtp("");
+  const handleSendMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address");
+      return;
     }
+
+    setIsLoading(true);
+    try {
+      await signIn("magic-link", { email });
+      toast.success("Magic link sent to your email! Check your inbox and click the link to sign in.");
+    } catch (error) {
+      console.error("Failed to send magic link:", error);
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to send magic link"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code) {
+      toast.error("Please enter the verification code");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await signIn("email-otp", { email, code });
+      toast.success("Successfully signed in!");
+    } catch (error) {
+      console.error("Failed to verify code:", error);
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : "Invalid verification code"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setStep("email");
+    setCode("");
+    setEmail("");
   };
 
   return (
-    <>
-      <div className="flex items-center justify-center h-full flex-col">
-        <Card className="min-w-[350px] pb-0 border shadow-md">
-          {step === "signIn" ? (
-            <>
-              <CardHeader className="text-center">
-                <CardTitle className="text-xl">Get Started</CardTitle>
-                <CardDescription>
-                  Enter your email to log in or sign up
-                </CardDescription>
-              </CardHeader>
-              <form onSubmit={handleEmailSubmit}>
-                <CardContent>
-                  <div className="flex justify-center">
-                    <img
-                      src="./auth.svg"
-                      alt="Lock Icon"
-                      width={200}
-                      height={200}
-                      className="rounded-lg -mt-4"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <Label htmlFor="email">Enter your email</Label>
-                  </div>
-                  <div className="relative flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        name="email"
-                        placeholder="name@example.com"
-                        type="email"
-                        className="pl-9"
-                        disabled={isLoading}
-                        required
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      size="icon"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ArrowRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  {error && (
-                    <p className="mt-2 text-sm text-red-500">{error}</p>
-                  )}
-                </CardContent>
-              </form>
-            </>
-          ) : (
-            <>
-              <CardHeader className="text-center mt-4">
-                <CardTitle>Check your email</CardTitle>
-                <CardDescription>
-                  We've sent a code to {step.email}
-                </CardDescription>
-              </CardHeader>
-              <form onSubmit={handleOtpSubmit}>
-                <CardContent className="pb-4">
-                  <input type="hidden" name="email" value={step.email} />
-                  <input type="hidden" name="code" value={otp} />
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+          <Shield className="h-6 w-6 text-primary" />
+        </div>
+        <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+        <CardDescription>
+          Sign in to your account using email verification
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={authMethod} onValueChange={(value) => setAuthMethod(value as "otp" | "magic-link")}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="otp" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              OTP Code
+            </TabsTrigger>
+            <TabsTrigger value="magic-link" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Magic Link
+            </TabsTrigger>
+          </TabsList>
 
-                  <div className="flex justify-center">
-                    <InputOTP
-                      value={otp}
-                      onChange={setOtp}
-                      maxLength={6}
-                      disabled={isLoading}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && otp.length === 6 && !isLoading) {
-                          // Find the closest form and submit it
-                          const form = (e.target as HTMLElement).closest("form");
-                          if (form) {
-                            form.requestSubmit();
-                          }
-                        }
-                      }}
-                    >
-                      <InputOTPGroup>
-                        {Array.from({ length: 6 }).map((_, index) => (
-                          <InputOTPSlot key={index} index={index} />
-                        ))}
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-                  {error && (
-                    <p className="mt-2 text-sm text-red-500 text-center">
-                      {error}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground text-center mt-4">
-                    Didn't receive a code?{" "}
-                    <Button
-                      variant="link"
-                      className="p-0 h-auto"
-                      onClick={() => setStep("signIn")}
-                    >
-                      Try again
-                    </Button>
+          <TabsContent value="otp" className="space-y-4">
+            {step === "email" ? (
+              <form onSubmit={handleSendCode} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    Email Address
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Sending..." : "Send Verification Code"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyCode} className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="code" className="text-sm font-medium">
+                    Verification Code
+                  </label>
+                  <Input
+                    id="code"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    maxLength={6}
+                    required
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Check your email for the verification code
                   </p>
-                </CardContent>
-                <CardFooter className="flex-col gap-2">
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading || otp.length !== 6}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      <>
-                        Verify code
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
+                </div>
+                <div className="space-y-2">
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Verifying..." : "Verify & Sign In"}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setStep("signIn")}
-                    disabled={isLoading}
                     className="w-full"
+                    onClick={resetForm}
+                    disabled={isLoading}
                   >
-                    Use different email
+                    Use Different Email
                   </Button>
-                </CardFooter>
+                </div>
               </form>
-            </>
-          )}
+            )}
+          </TabsContent>
 
-          <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-muted border-t rounded-b-lg">
-            Secured by{" "}
-            <a
-              href="https://vly.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-primary transition-colors"
-            >
-              vly.ai
-            </a>
-          </div>
-        </Card>
-      </div>
-    </>
+          <TabsContent value="magic-link" className="space-y-4">
+            <form onSubmit={handleSendMagicLink} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="magic-email" className="text-sm font-medium">
+                  Email Address
+                </label>
+                <Input
+                  id="magic-email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  We'll send you a secure link to sign in instantly
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Sending..." : "Send Magic Link"}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-muted-foreground">
+            By signing in, you agree to our terms of service and privacy policy
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
