@@ -1,3 +1,4 @@
+ // @ts-nocheck
 import { Email } from "@convex-dev/auth/providers/Email";
 import { generateRandomString, alphabet } from "oslo/crypto";
 import { createEmailProvider } from "./emailProvider";

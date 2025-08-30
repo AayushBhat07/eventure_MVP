@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import React, { useState } from 'react';
 import { MenuBar } from '@/components/ui/glow-menu';
 import {

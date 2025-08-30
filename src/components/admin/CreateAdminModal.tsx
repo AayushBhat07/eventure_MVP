@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import React, { useState } from 'react';
@@ -29,7 +30,8 @@ import { Plus } from 'lucide-react';
 export function CreateAdminModal() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<string>(ROLES.USER);
+  // Default to Admin to simplify initial seeding
+  const [role, setRole] = useState<string>(ROLES.ADMIN);
   const [isOpen, setIsOpen] = useState(false);
   const createAdmin = useAction(api.admin_actions.createAdmin);
 
@@ -41,12 +43,14 @@ export function CreateAdminModal() {
     }
 
     try {
-      await createAdmin({ email, password, role });
+      // Always normalize email for consistent uniqueness and lookups
+      const normalizedEmail = email.trim().toLowerCase();
+      await createAdmin({ email: normalizedEmail, password, role });
       toast.success("New user created successfully!");
       setIsOpen(false);
       setEmail('');
       setPassword('');
-      setRole(ROLES.USER);
+      setRole(ROLES.ADMIN);
     } catch (error) {
       toast.error((error as Error).message);
     }

@@ -78,7 +78,8 @@ const schema = defineSchema({
   }).index("by_author", ["authorId"]),
 
   teamMembers: defineTable({
-    userId: v.id("users"),
+    // Make userId optional to allow creation before linking to a users doc
+    userId: v.optional(v.id("users")),
     name: v.string(),
     email: v.string(),
     role: v.string(),

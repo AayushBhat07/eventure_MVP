@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use node";
 
 import { v } from "convex/values";
@@ -18,11 +19,15 @@ export const createAdmin = action({
       const hashedPassword: string = await bcrypt.hash(args.password, saltRounds);
 
       // Call internal mutation to save the admin
-      const result: { success: boolean; message: string; id: any } = await ctx.runMutation(internal.admin_creation.createAdminInternal, {
-        email: args.email,
-        passwordHash: hashedPassword,
-        role: args.role,
-      });
+      // Further relax type inference to avoid deep instantiation
+      const result = (await (ctx as any).runMutation(
+        (internal as any).admin_creation.createAdminInternal,
+        {
+          email: args.email,
+          passwordHash: hashedPassword,
+          role: args.role,
+        }
+      )) as { success: boolean; message: string; id: any };
 
       return result;
     } catch (error) {

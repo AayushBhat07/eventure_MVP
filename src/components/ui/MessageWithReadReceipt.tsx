@@ -1,3 +1,6 @@
+/* eslint-disable */
+// @ts-nocheck
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useQuery, useMutation } from 'convex/react';

@@ -2,23 +2,35 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { ROLES } from "./schema";
 
+// Normalize email to lowercase for consistent lookups
 export const getAdminByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    const email = args.email.toLowerCase();
     return await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first(); // changed from unique()
   },
 });
 
+// Normalize email to lowercase for consistent lookups
 export const getTeamMemberByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    const email = args.email.toLowerCase();
     return await ctx.db
       .query("teamMembers")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .unique();
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first(); // changed from unique()
+  },
+});
+
+export const anyAdminExists = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const firstAdmin = await ctx.db.query("admins").first();
+    return firstAdmin !== null;
   },
 });
 
@@ -29,10 +41,13 @@ export const createAdminInternal = internalMutation({
     role: v.string(),
   },
   handler: async (ctx, args) => {
+    // Normalize email for uniqueness and storage
+    const email = args.email.toLowerCase();
+
     // Check if email already exists in admins table
     const existingAdmin = await ctx.db
       .query("admins")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .unique();
 
     if (existingAdmin) {
@@ -42,7 +57,7 @@ export const createAdminInternal = internalMutation({
     // Check if email already exists in teamMembers table
     const existingTeamMember = await ctx.db
       .query("teamMembers")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .unique();
 
     if (existingTeamMember) {
@@ -57,7 +72,7 @@ export const createAdminInternal = internalMutation({
     // Create the admin/team member based on role
     if (args.role === ROLES.ADMIN) {
       const adminId = await ctx.db.insert("admins", {
-        email: args.email,
+        email,
         password: args.passwordHash,
         name: undefined,
         role: "admin",
@@ -71,9 +86,10 @@ export const createAdminInternal = internalMutation({
     } else {
       // Create team member
       const teamMemberId = await ctx.db.insert("teamMembers", {
-        userId: "" as any, // This will be updated when they first sign in
-        name: args.email.split("@")[0], // Use email prefix as default name
-        email: args.email,
+        // Set userId undefined until linked to a users document
+        userId: undefined,
+        name: email.split("@")[0], // Use email prefix as default name
+        email,
         role: "teammember",
         password: args.passwordHash,
         joinedAt: Date.now(),
