@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Protected } from "@/lib/protected-page";
+/* eslint-disable */
 import { NavBar } from "@/components/ui/tubelight-navbar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
 import { BrutalistSportsCard } from "@/components/ui/brutalist-sports-card";
@@ -26,7 +26,7 @@ export default function Events() {
   const events = useQuery(api.events.list);
 
   return (
-    <Protected>
+    <>
       <NavBar items={navItems} />
       
       <div className="fixed top-0 right-6 z-50 pt-6">
@@ -54,20 +54,18 @@ export default function Events() {
             return (
               <BrutalistSportsCard
                 key={event._id}
-                // Use a friendly label (fallback to "Event")
                 sport={event.name || "Event"}
                 title={event.name}
                 date={date}
                 time={time}
                 venue={event.venue}
                 icon={Calendar}
-                // Navigate by id to the existing /event/:eventId route
                 viewPath={`/event/${event._id}`}
               />
             );
           })
         )}
       </div>
-    </Protected>
+    </>
   );
 }
