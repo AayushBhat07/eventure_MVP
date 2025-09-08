@@ -19,6 +19,7 @@ import AdminEvents from "./pages/AdminEvents.tsx";
 import AdminCommunication from "./pages/AdminCommunication.tsx";
 import AdminSettings from "./pages/AdminSettings.tsx";
 import AdminTeam from "@/pages/AdminTeam.tsx";
+import AdminDashboard from "./pages/AdminDashboard.tsx";
 import { Protected } from "@/lib/protected-page.tsx";
 import { AdminProtected } from "@/lib/admin-protected-page.tsx";
 
@@ -37,7 +38,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/event/:eventId" element={<Protected><EventInfo /></Protected>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin-signIn" element={<AdminSignIn />} />
-            <Route path="/admin-dashboard" element={<AdminProtected><AdminEvents /></AdminProtected>} />
+            <Route path="/admin-dashboard" element={<AdminProtected><AdminDashboard /></AdminProtected>} />
             <Route path="/admin-events" element={<AdminProtected><AdminEvents /></AdminProtected>} />
             <Route path="/admin-team" element={<AdminProtected><AdminTeam /></AdminProtected>} />
             <Route path="/admin-communication" element={<AdminProtected><AdminCommunication /></AdminProtected>} />
