@@ -37,7 +37,8 @@ const schema = defineSchema({
     success: v.boolean(),
   })
     .index("by_identifier_and_type", ["identifier", "type"])
-    .index("by_timestamp", ["timestamp"]),
+    .index("by_timestamp", ["timestamp"])
+    .index("identifier", ["identifier"]),
   
   events: defineTable({
     name: v.string(),
