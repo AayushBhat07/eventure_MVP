@@ -45,12 +45,17 @@ export function AuthCard() {
     }
 
     setIsLoading(true);
+    console.log("Attempting to verify code for email:", email);
+    console.log("Code length:", code.length);
+    
     try {
-      await signIn("email-otp", { email, code });
+      const result = await signIn("email-otp", { email, code });
+      console.log("Sign in result:", result);
       toast.success("Successfully signed in! Redirecting...");
       // Don't set loading to false - let the auth state change trigger the redirect
     } catch (error) {
       console.error("Failed to verify code:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       toast.error(
         error instanceof Error 
           ? error.message 
