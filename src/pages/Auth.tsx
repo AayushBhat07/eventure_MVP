@@ -25,11 +25,15 @@ function SignIn() {
       // Process the magic link token
       (async () => {
         try {
-          await signIn("magic-link", { token, email });
-          // Wait a bit for auth state to update, then navigate
+          console.log("Processing magic link with token:", token, "and email:", email);
+          const result = await signIn("magic-link", { token, email });
+          console.log("Sign in result:", result);
+          
+          // Wait for auth state to propagate
           setTimeout(() => {
+            console.log("Navigating to dashboard after successful sign-in");
             navigate("/dashboard");
-          }, 1000);
+          }, 2000);
         } catch (error) {
           console.error("Magic link authentication failed:", error);
           setIsProcessingToken(false);
