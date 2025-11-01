@@ -23,25 +23,28 @@ function SignIn() {
       (async () => {
         try {
           await signIn("magic-link", { token, email });
-          // Wait a moment for auth state to update
-          setTimeout(() => {
-            navigate("/dashboard");
-          }, 500);
+          // Don't navigate immediately - let the auth state update first
         } catch (error) {
           console.error("Magic link authentication failed:", error);
           setIsProcessingToken(false);
         }
       })();
     }
-  }, [searchParams, isAuthenticated, signIn, navigate, isProcessingToken]);
+  }, [searchParams, isAuthenticated, signIn, isProcessingToken]);
 
   useEffect(() => {
+    // Only redirect once authentication is confirmed and not loading
     if (!isLoading && isAuthenticated && !searchParams.get("token")) {
       navigate(searchParams.get("redirect") || "/dashboard");
     }
-  }, [isLoading, isAuthenticated, searchParams, navigate]);
+    
+    // Handle redirect after magic link authentication is complete
+    if (!isLoading && isAuthenticated && isProcessingToken) {
+      navigate("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, searchParams, navigate, isProcessingToken]);
 
-  // Show loading spinner while processing magic link token
+  // Show loading spinner while processing magic link token or during auth check
   if (isProcessingToken || (searchParams.get("token") && !isAuthenticated)) {
     return (
       <div className="flex h-screen items-center justify-center">
