@@ -11,41 +11,43 @@ function SignIn() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isProcessingToken, setIsProcessingToken] = useState(false);
+  const [tokenProcessed, setTokenProcessed] = useState(false);
   
   useEffect(() => {
     // Handle magic link token and email from URL parameters
     const token = searchParams.get("token");
     const email = searchParams.get("email");
     
-    if (token && email && !isAuthenticated && !isProcessingToken) {
+    if (token && email && !tokenProcessed) {
       setIsProcessingToken(true);
+      setTokenProcessed(true);
+      
       // Process the magic link token
       (async () => {
         try {
           await signIn("magic-link", { token, email });
-          // Don't navigate immediately - let the auth state update first
+          // Wait a bit for auth state to update, then navigate
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 1000);
         } catch (error) {
           console.error("Magic link authentication failed:", error);
           setIsProcessingToken(false);
+          setTokenProcessed(false);
         }
       })();
     }
-  }, [searchParams, isAuthenticated, signIn, isProcessingToken]);
+  }, [searchParams, signIn, navigate, tokenProcessed]);
 
   useEffect(() => {
-    // Only redirect once authentication is confirmed and not loading
+    // Redirect if already authenticated and no token in URL
     if (!isLoading && isAuthenticated && !searchParams.get("token")) {
       navigate(searchParams.get("redirect") || "/dashboard");
     }
-    
-    // Handle redirect after magic link authentication is complete
-    if (!isLoading && isAuthenticated && isProcessingToken) {
-      navigate("/dashboard");
-    }
-  }, [isLoading, isAuthenticated, searchParams, navigate, isProcessingToken]);
+  }, [isLoading, isAuthenticated, searchParams, navigate]);
 
-  // Show loading spinner while processing magic link token or during auth check
-  if (isProcessingToken || (searchParams.get("token") && !isAuthenticated)) {
+  // Show loading spinner while processing magic link token
+  if (isProcessingToken || searchParams.get("token")) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
