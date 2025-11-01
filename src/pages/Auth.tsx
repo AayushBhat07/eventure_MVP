@@ -29,11 +29,19 @@ function SignIn() {
           const result = await signIn("magic-link", { token, email });
           console.log("Sign in result:", result);
           
-          // Wait for auth state to propagate
-          setTimeout(() => {
-            console.log("Navigating to dashboard after successful sign-in");
-            navigate("/dashboard");
-          }, 2000);
+          // Check if sign-in was successful
+          if (result && !result.signingIn) {
+            console.log("Sign-in completed, waiting for auth state...");
+            // Wait longer for auth state to propagate
+            setTimeout(() => {
+              console.log("Navigating to dashboard after successful sign-in");
+              navigate("/dashboard");
+            }, 3000);
+          } else {
+            console.error("Sign-in did not complete successfully:", result);
+            setIsProcessingToken(false);
+            setTokenProcessed(false);
+          }
         } catch (error) {
           console.error("Magic link authentication failed:", error);
           setIsProcessingToken(false);
