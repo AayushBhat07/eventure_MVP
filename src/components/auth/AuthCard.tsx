@@ -5,11 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Mail } from "lucide-react";
-import { useNavigate } from "react-router";
 
 export function AuthCard() {
   const { signIn } = useAuthActions();
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
@@ -49,11 +47,8 @@ export function AuthCard() {
     setIsLoading(true);
     try {
       await signIn("email-otp", { email, code });
-      toast.success("Successfully signed in!");
-      // Navigate to dashboard after successful sign-in
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 500);
+      toast.success("Successfully signed in! Redirecting...");
+      // Don't set loading to false - let the auth state change trigger the redirect
     } catch (error) {
       console.error("Failed to verify code:", error);
       toast.error(
