@@ -8,7 +8,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen">
       <HeroGeometric 
-        badge="EventHub"
+        badge="Eventure"
         title1="One App. Every Event."
         title2="Zero Hassle."
       />
@@ -17,7 +17,7 @@ export default function Landing() {
       <div className="fixed top-0 left-0 right-0 z-50 bg-transparent">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="text-xl font-bold tracking-tight text-white">EventHub</span>
+            <span className="text-xl font-bold tracking-tight text-white">Eventure</span>
             <Link to="/admin-signIn">
               <LiquidButton 
                 className="text-white text-sm"
