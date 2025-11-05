@@ -23,6 +23,7 @@ import type * as devTools from "../devTools.js";
 import type * as events from "../events.js";
 import type * as generators_createAdminUser from "../generators/createAdminUser.js";
 import type * as generators_createSampleData from "../generators/createSampleData.js";
+import type * as generators_createSampleEvents from "../generators/createSampleEvents.js";
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
 import type * as privateMessages from "../privateMessages.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   "generators/createAdminUser": typeof generators_createAdminUser;
   "generators/createSampleData": typeof generators_createSampleData;
+  "generators/createSampleEvents": typeof generators_createSampleEvents;
   http: typeof http;
   migrations: typeof migrations;
   privateMessages: typeof privateMessages;

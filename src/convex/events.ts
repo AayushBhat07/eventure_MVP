@@ -223,25 +223,21 @@ export const updateEventAsAdmin = mutation({
     maxParticipants: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
-    }
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email!))
-      .unique();
-
-    if (user?.role !== "admin") {
-      throw new Error("You are not authorized to perform this action");
+    // Check if event exists
+    const event = await ctx.db.get(args.id);
+    if (!event) {
+      return { success: false, message: "Event not found" };
     }
 
     const { id, ...rest } = args;
 
-    await ctx.db.patch(id, rest);
-
-    return { success: true, message: "Event updated successfully" };
+    try {
+      await ctx.db.patch(id, rest);
+      return { success: true, message: "Event updated successfully" };
+    } catch (error) {
+      console.error("Error updating event:", error);
+      return { success: false, message: "Failed to update event" };
+    }
   },
 });
 
@@ -250,23 +246,31 @@ export const deleteEventAsAdmin = mutation({
     id: v.id("events"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Unauthorized");
+    // Check if event exists
+    const event = await ctx.db.get(args.id);
+    if (!event) {
+      return { success: false, message: "Event not found" };
     }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", identity.email!))
-      .unique();
+    try {
+      // Delete related registrations first
+      const registrations = await ctx.db
+        .query("eventRegistrations")
+        .withIndex("by_event", (q) => q.eq("eventId", args.id))
+        .collect();
+      
+      for (const registration of registrations) {
+        await ctx.db.delete(registration._id);
+      }
 
-    if (user?.role !== "admin") {
-      throw new Error("You are not authorized to perform this action");
+      // Delete the event
+      await ctx.db.delete(args.id);
+      
+      return { success: true, message: "Event deleted successfully" };
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      return { success: false, message: "Failed to delete event" };
     }
-
-    await ctx.db.delete(args.id);
-
-    return { success: true, message: "Event deleted successfully" };
   },
 });
 
