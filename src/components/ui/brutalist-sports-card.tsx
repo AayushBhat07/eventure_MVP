@@ -100,6 +100,7 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
           cursor: pointer;
           pointer-events: auto;
           user-select: none;
+          z-index: 1;
         }
         .brutalist-card__button--read {
           background-color: #000;
@@ -138,8 +139,8 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
         }
       `}</style>
 
-      <div style={{ pointerEvents: 'auto' }}>
-        <div className="brutalist-card" style={{ pointerEvents: 'auto' }}>
+      <div style={{ pointerEvents: 'auto', position: 'relative', zIndex: 10 }}>
+        <div className="brutalist-card" style={{ pointerEvents: 'auto', position: 'relative' }}>
           <div className="brutalist-card__header">
             <div className="brutalist-card__icon">
               <Icon size={32} />
