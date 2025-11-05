@@ -135,8 +135,8 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
         }
       `}</style>
 
-      <div>
-        <div className="brutalist-card">
+      <div style={{ pointerEvents: 'auto' }}>
+        <div className="brutalist-card" style={{ pointerEvents: 'auto' }}>
           <div className="brutalist-card__header">
             <div className="brutalist-card__icon">
               <Icon size={32} />
@@ -149,9 +149,21 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
             <p>Time: {time}</p>
             <p>Venue: {venue}</p>
           </div>
-          <div className="brutalist-card__actions">
-            <button className="brutalist-card__button brutalist-card__button--mark" onClick={handleViewDetails}>View Details</button>
-            <button className="brutalist-card__button brutalist-card__button--read" onClick={handleRegisterNow}>Register Now</button>
+          <div className="brutalist-card__actions" style={{ pointerEvents: 'auto' }}>
+            <button 
+              className="brutalist-card__button brutalist-card__button--mark" 
+              onClick={handleViewDetails}
+              style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            >
+              View Details
+            </button>
+            <button 
+              className="brutalist-card__button brutalist-card__button--read" 
+              onClick={handleRegisterNow}
+              style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            >
+              Register Now
+            </button>
           </div>
         </div>
       </div>
