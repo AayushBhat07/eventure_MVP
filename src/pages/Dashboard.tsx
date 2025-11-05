@@ -35,7 +35,7 @@ export default function Dashboard() {
       </div>
 
       <div className="container mx-auto px-4 pt-48 pb-24">
-        <BentoGrid className="grid-cols-1 md:grid-cols-6 lg:grid-cols-6 auto-rows-[200px]">
+        <BentoGrid className="grid-cols-1 md:grid-cols-6 auto-rows-[220px] gap-4">
           {/* Top Left - Quick Stats */}
           <BentoCard 
             title="Quick Stats" 
@@ -49,7 +49,7 @@ export default function Dashboard() {
           <BentoCard 
             title="Discover Events" 
             description="Find and register for upcoming events" 
-            className="md:col-span-2 md:row-span-1"
+            className="md:col-span-2 md:row-span-2"
             gradient="from-green-500/20 via-emerald-500/10 to-green-500/5"
           >
             <EventDiscoveryWidget />
@@ -68,7 +68,7 @@ export default function Dashboard() {
           <BentoCard 
             title="Registered Events" 
             description="Your upcoming events" 
-            className="md:col-span-4 md:row-span-2"
+            className="md:col-span-2 md:row-span-2"
             gradient="from-orange-500/20 via-amber-500/10 to-orange-500/5"
           >
             <RegisteredEventsWidget />

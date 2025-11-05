@@ -9,16 +9,16 @@ export function CertificatesWidget() {
   const certificatesCount = completedEvents?.filter((e) => e.hasCertificate).length || 0;
 
   return (
-    <div className="space-y-4">
-      <div className="text-center py-6">
-        <Trophy className="h-16 w-16 mx-auto mb-3 text-primary" />
-        <div className="text-4xl font-black">{certificatesCount}</div>
-        <p className="text-sm text-muted-foreground mt-1">Certificates Earned</p>
+    <div className="space-y-3 h-full flex flex-col justify-center">
+      <div className="text-center py-4">
+        <Trophy className="h-12 w-12 mx-auto mb-2 text-primary" />
+        <div className="text-3xl font-black">{certificatesCount}</div>
+        <p className="text-xs text-muted-foreground mt-1">Certificates Earned</p>
       </div>
 
       {completedEvents && completedEvents.length > 0 && (
         <div className="space-y-2">
-          {completedEvents.slice(0, 2).map((event) => (
+          {completedEvents.slice(0, 1).map((event) => (
             event.hasCertificate && (
               <div
                 key={event._id}

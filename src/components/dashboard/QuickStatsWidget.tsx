@@ -31,19 +31,19 @@ export function QuickStatsWidget() {
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-3 gap-2 h-full">
       {statItems.map((item, index) => (
         <motion.div
           key={item.label}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: index * 0.1 }}
-          className="text-center"
+          className="text-center flex flex-col items-center justify-center"
         >
-          <div className={`${item.bgColor} rounded-2xl p-4 mb-3 inline-flex`}>
-            <item.icon className={`h-8 w-8 ${item.color}`} />
+          <div className={`${item.bgColor} rounded-xl p-3 mb-2 inline-flex`}>
+            <item.icon className={`h-6 w-6 ${item.color}`} />
           </div>
-          <div className="text-2xl font-black">{item.value}</div>
+          <div className="text-xl font-black">{item.value}</div>
           <p className="text-xs text-muted-foreground uppercase font-bold">{item.label}</p>
         </motion.div>
       ))}

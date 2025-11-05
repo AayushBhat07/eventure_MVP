@@ -16,14 +16,14 @@ export function ProfileWidget() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-full flex flex-col justify-between">
       <div className="flex items-center gap-3">
-        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-black dark:border-white">
-          <User className="h-8 w-8" />
+        <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center border-2 border-black dark:border-white">
+          <User className="h-7 w-7" />
         </div>
-        <div className="flex-1">
-          <h4 className="font-bold">{user?.name || "User"}</h4>
-          <p className="text-xs text-muted-foreground">{user?.email}</p>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold truncate">{user?.name || "User"}</h4>
+          <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
         </div>
       </div>
 
@@ -34,7 +34,7 @@ export function ProfileWidget() {
           ) : (
             <AlertCircle className="h-4 w-4 text-yellow-500" />
           )}
-          <span className="text-sm font-bold">
+          <span className="text-xs font-bold">
             {isProfileComplete ? "Profile Complete" : "Complete Your Profile"}
           </span>
         </div>
@@ -46,7 +46,7 @@ export function ProfileWidget() {
         <Button
           variant="outline"
           size="sm"
-          className="w-full border-2 border-black dark:border-white font-bold"
+          className="w-full border-2 border-black dark:border-white font-bold text-xs"
           onClick={() => navigate("/profile")}
         >
           {isProfileComplete ? "VIEW PROFILE" : "COMPLETE PROFILE"}

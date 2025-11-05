@@ -13,10 +13,10 @@ export function EventDiscoveryWidget() {
 
   const filteredEvents = events?.filter((event) =>
     event.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 3);
+  ).slice(0, 2);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 h-full flex flex-col">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -27,7 +27,7 @@ export function EventDiscoveryWidget() {
         />
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 flex-1 overflow-auto">
         {!filteredEvents ? (
           <div className="text-sm text-muted-foreground">Loading events...</div>
         ) : filteredEvents.length === 0 ? (
@@ -36,15 +36,13 @@ export function EventDiscoveryWidget() {
           filteredEvents.map((event) => (
             <div
               key={event._id}
-              className="border-2 border-black dark:border-white p-3 hover:bg-accent transition-colors cursor-pointer"
+              className="border-2 border-black dark:border-white p-2 hover:bg-accent transition-colors cursor-pointer"
               onClick={() => navigate(`/event/${event._id}`)}
             >
-              <h4 className="font-bold text-sm">{event.name}</h4>
+              <h4 className="font-bold text-xs truncate">{event.name}</h4>
               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span>{new Date(event.startDate).toLocaleDateString()}</span>
-                <MapPin className="h-3 w-3 ml-2" />
-                <span>{event.venue}</span>
+                <span className="truncate">{new Date(event.startDate).toLocaleDateString()}</span>
               </div>
             </div>
           ))
@@ -53,10 +51,11 @@ export function EventDiscoveryWidget() {
 
       <Button
         variant="outline"
+        size="sm"
         className="w-full border-2 border-black dark:border-white font-bold"
         onClick={() => navigate("/events")}
       >
-        VIEW ALL EVENTS
+        VIEW ALL
       </Button>
     </div>
   );
