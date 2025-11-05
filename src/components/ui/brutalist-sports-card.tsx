@@ -79,7 +79,11 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
           padding-bottom: 1rem;
           font-weight: 600;
         }
-        .brutalist-card__actions { margin-top: 1rem; }
+        .brutalist-card__actions { 
+          margin-top: 1rem;
+          position: relative;
+          z-index: 1000;
+        }
         .brutalist-card__button {
           display: block;
           width: 100%;
@@ -94,13 +98,13 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
           position: relative;
           transition: all 0.2s ease;
           box-shadow: 5px 5px 0 #000;
-          overflow: hidden;
+          overflow: visible;
           text-decoration: none;
           margin-bottom: 1rem;
           cursor: pointer !important;
           pointer-events: auto !important;
           user-select: none;
-          z-index: 100;
+          z-index: 1001;
         }
         .brutalist-card__button--read {
           background-color: #000;
@@ -140,7 +144,7 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
       `}</style>
 
       <div style={{ pointerEvents: 'auto', position: 'relative', zIndex: 10 }}>
-        <div className="brutalist-card" style={{ pointerEvents: 'auto', position: 'relative' }}>
+        <div className="brutalist-card">
           <div className="brutalist-card__header">
             <div className="brutalist-card__icon">
               <Icon size={32} />
@@ -153,11 +157,10 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
             <p>Time: {time}</p>
             <p>Venue: {venue}</p>
           </div>
-          <div className="brutalist-card__actions" style={{ pointerEvents: 'auto', position: 'relative', zIndex: 100 }}>
+          <div className="brutalist-card__actions">
             <button 
               className="brutalist-card__button brutalist-card__button--mark" 
               onClick={handleViewDetails}
-              style={{ pointerEvents: 'auto', cursor: 'pointer', position: 'relative', zIndex: 101 }}
               type="button"
             >
               View Details
@@ -165,7 +168,6 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
             <button 
               className="brutalist-card__button brutalist-card__button--read" 
               onClick={handleRegisterNow}
-              style={{ pointerEvents: 'auto', cursor: 'pointer', position: 'relative', zIndex: 101 }}
               type="button"
             >
               Register Now
