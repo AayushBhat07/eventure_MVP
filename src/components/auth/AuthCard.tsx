@@ -52,8 +52,8 @@ export function AuthCard() {
       const result = await signIn("email-otp", { email, code });
       console.log("Sign in result:", result);
       toast.success("Successfully signed in! Redirecting...");
-      // Reset loading state to allow Auth.tsx to detect the authentication state change
-      setIsLoading(false);
+      // Keep loading state true to allow Auth.tsx to handle the redirect
+      // The Auth.tsx useEffect will detect the auth state change and redirect
     } catch (error) {
       console.error("Failed to verify code:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
