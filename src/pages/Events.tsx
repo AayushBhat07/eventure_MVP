@@ -41,7 +41,7 @@ export default function Events() {
         </div>
       </div>
 
-      <div className="pt-48 pb-24 flex flex-wrap justify-center relative" style={{ zIndex: 1 }}>
+      <div className="pt-48 pb-24 flex flex-wrap justify-center relative z-[60]">
         {!events ? (
           <div className="text-sm text-muted-foreground">Loading events...</div>
         ) : events.length === 0 ? (
