@@ -56,7 +56,7 @@ export function Dock({
     <motion.div
       ref={containerRef}
       className={cn(
-        'fixed top-6 left-1/2 -translate-x-1/2 z-50',
+        'fixed top-6 left-1/2 -translate-x-1/2 z-[100]',
         'flex items-center justify-center gap-2',
         'bg-background/80 backdrop-blur-lg border border-border rounded-full',
         'px-4 py-2 shadow-lg',

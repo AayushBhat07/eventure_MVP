@@ -29,7 +29,7 @@ export default function Events() {
     <div className="min-h-screen relative">
       <Dock items={dockItems} />
       
-      <div className="fixed top-0 right-6 z-50 pt-6">
+      <div className="fixed top-0 right-6 z-[100] pt-6">
         <ThemeSwitcher />
       </div>
       
