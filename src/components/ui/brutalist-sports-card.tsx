@@ -16,6 +16,8 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
   const navigate = useNavigate();
 
   const handleViewDetails = () => {
+    console.log("View Details clicked for:", title);
+    toast.info(`Opening details for ${title}...`);
     // Prefer explicit viewPath when provided
     if (viewPath) {
       navigate(viewPath);
@@ -26,6 +28,7 @@ const BrutalistSportsCard: React.FC<BrutalistSportsCardProps> = ({ sport, title,
   };
   
   const handleRegisterNow = () => {
+    console.log("Register Now clicked for:", title);
     toast.success(`Successfully registered for ${title}!`);
   };
 
