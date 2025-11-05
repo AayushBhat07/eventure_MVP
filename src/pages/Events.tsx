@@ -26,7 +26,7 @@ export default function Events() {
   const events = useQuery(api.events.list);
 
   return (
-    <>
+    <div className="min-h-screen relative">
       <NavBar items={navItems} />
       
       <div className="fixed top-0 right-6 z-50 pt-6">
@@ -41,7 +41,7 @@ export default function Events() {
         </div>
       </div>
 
-      <div className="pt-48 flex flex-wrap justify-center">
+      <div className="pt-48 pb-24 flex flex-wrap justify-center relative" style={{ zIndex: 1 }}>
         {!events ? (
           <div className="text-sm text-muted-foreground">Loading events...</div>
         ) : events.length === 0 ? (
@@ -66,6 +66,6 @@ export default function Events() {
           })
         )}
       </div>
-    </>
+    </div>
   );
 }
