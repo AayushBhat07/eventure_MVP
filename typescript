@@ -1,1 +1,1 @@
-<Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+const redirectPath = searchParams.get("redirect") || "/dashboard";
