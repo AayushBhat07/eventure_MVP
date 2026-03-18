@@ -22,8 +22,43 @@ export default function Events() {
     { icon: <Settings size={20} />, label: 'Settings', href: '/settings' }
   ];
 
-  // Load events from backend (active, completed, etc. — all events)
   const events = useQuery(api.events.list);
+
+  const now = Date.now();
+
+  const ongoingEvents = events?.filter(e => e.startDate <= now && e.endDate >= now) ?? [];
+  const upcomingEvents = events?.filter(e => e.startDate > now) ?? [];
+  const completedEvents = events?.filter(e => e.endDate < now) ?? [];
+
+  const renderEventCard = (event: any) => {
+    const start = new Date(event.startDate);
+    const date = start.toLocaleDateString();
+    const time = start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return (
+      <BrutalistSportsCard
+        key={event._id}
+        sport={event.name || "Event"}
+        title={event.name}
+        date={date}
+        time={time}
+        venue={event.venue}
+        icon={Calendar}
+        viewPath={`/event/${event._id}`}
+      />
+    );
+  };
+
+  const SectionHeading = ({ label, count }: { label: string; count: number }) => (
+    <div className="w-full flex items-center gap-4 mb-4 mt-8 first:mt-0 px-4">
+      <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black dark:text-white whitespace-nowrap">
+        {label}
+      </h2>
+      <span className="text-xs font-black border-2 border-black dark:border-white px-2 py-0.5 bg-white dark:bg-neutral-900 text-black dark:text-white shadow-[3px_3px_0px_#000] dark:shadow-[3px_3px_0px_#fff]">
+        {count}
+      </span>
+      <div className="flex-1 h-0.5 bg-black dark:bg-white" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen relative">
@@ -41,29 +76,43 @@ export default function Events() {
         </div>
       </div>
 
-      <div className="pt-48 pb-24 flex flex-wrap justify-center relative z-[60]">
+      <div className="pt-48 pb-24 relative z-[60] px-4">
         {!events ? (
-          <div className="text-sm text-muted-foreground">Loading events...</div>
+          <div className="text-sm text-muted-foreground text-center">Loading events...</div>
         ) : events.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No events found.</div>
+          <div className="text-sm text-muted-foreground text-center">No events found.</div>
         ) : (
-          events.map((event) => {
-            const start = new Date(event.startDate);
-            const date = start.toLocaleDateString();
-            const time = start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-            return (
-              <BrutalistSportsCard
-                key={event._id}
-                sport={event.name || "Event"}
-                title={event.name}
-                date={date}
-                time={time}
-                venue={event.venue}
-                icon={Calendar}
-                viewPath={`/event/${event._id}`}
-              />
-            );
-          })
+          <>
+            {/* Ongoing Events */}
+            <SectionHeading label="Ongoing Events" count={ongoingEvents.length} />
+            {ongoingEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-4 mb-4">No ongoing events.</p>
+            ) : (
+              <div className="flex flex-wrap justify-center mb-4">
+                {ongoingEvents.map(renderEventCard)}
+              </div>
+            )}
+
+            {/* Upcoming Events */}
+            <SectionHeading label="Upcoming Events" count={upcomingEvents.length} />
+            {upcomingEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-4 mb-4">No upcoming events.</p>
+            ) : (
+              <div className="flex flex-wrap justify-center mb-4">
+                {upcomingEvents.map(renderEventCard)}
+              </div>
+            )}
+
+            {/* Completed Events */}
+            <SectionHeading label="Completed Events" count={completedEvents.length} />
+            {completedEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-4 mb-4">No completed events.</p>
+            ) : (
+              <div className="flex flex-wrap justify-center mb-4">
+                {completedEvents.map(renderEventCard)}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
