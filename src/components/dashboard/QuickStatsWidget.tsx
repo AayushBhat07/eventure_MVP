@@ -1,6 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Users, Calendar, Trophy } from "lucide-react";
+import { Calendar, Award, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function QuickStatsWidget() {
@@ -9,42 +9,40 @@ export function QuickStatsWidget() {
   const statItems = [
     {
       icon: Calendar,
-      value: stats?.totalEventsJoined || 0,
-      label: "Events",
-      color: "text-blue-600 dark:text-blue-400",
-      bgColor: "bg-blue-500/10"
+      label: "EVENTS",
+      value: stats?.totalEventsJoined ?? 0,
     },
     {
-      icon: Trophy,
-      value: stats?.totalCertificates || 0,
-      label: "Certificates",
-      color: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-amber-500/10"
+      icon: Award,
+      label: "CERTIFICATES",
+      value: stats?.totalCertificates ?? 0,
     },
     {
-      icon: Users,
-      value: "Active",
-      label: "Status",
-      color: "text-green-600 dark:text-green-400",
-      bgColor: "bg-green-500/10"
-    }
+      icon: CheckCircle,
+      label: "ACTIVE STATUS",
+      isCheck: true,
+    },
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-2 h-full items-center">
+    <div className="flex flex-col gap-2">
       {statItems.map((item, index) => (
         <motion.div
           key={item.label}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.1 }}
-          className="text-center flex flex-col items-center justify-center"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: index * 0.08 }}
+          className="flex items-center justify-between border-2 border-black dark:border-white px-3 py-2 bg-white dark:bg-neutral-800"
         >
-          <div className={`${item.bgColor} rounded-xl p-2 mb-1.5 inline-flex`}>
-            <item.icon className={`h-5 w-5 ${item.color}`} />
+          <div className="flex items-center gap-2">
+            <item.icon className="h-4 w-4 text-black dark:text-white" />
+            <span className="text-[11px] font-black uppercase tracking-wide">{item.label}</span>
           </div>
-          <div className="text-lg font-black">{item.value}</div>
-          <p className="text-[10px] text-muted-foreground uppercase font-bold leading-tight">{item.label}</p>
+          {item.isCheck ? (
+            <CheckCircle className="h-5 w-5 text-green-500" />
+          ) : (
+            <span className="text-lg font-black">{item.value}</span>
+          )}
         </motion.div>
       ))}
     </div>

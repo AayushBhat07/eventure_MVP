@@ -8,13 +8,15 @@ export function RegisteredEventsWidget() {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-2 h-full overflow-auto">
+    <div className="space-y-2 min-h-[120px]">
       {!upcomingEvents ? (
-        <div className="text-sm text-muted-foreground">Loading...</div>
+        <div className="text-xs text-muted-foreground">Loading...</div>
       ) : upcomingEvents.length === 0 ? (
-        <div className="text-center py-6">
-          <Calendar className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No registered events</p>
+        <div className="flex flex-col items-center justify-center py-8 gap-2">
+          <Calendar className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">
+            NO REGISTERED EVENTS
+          </p>
         </div>
       ) : (
         upcomingEvents.slice(0, 4).map((event) => (

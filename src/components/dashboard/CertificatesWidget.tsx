@@ -6,39 +6,44 @@ import { Button } from "@/components/ui/button";
 export function CertificatesWidget() {
   const completedEvents = useQuery(api.dashboard.getCompletedEvents);
 
-  const certificatesCount = completedEvents?.filter((e) => e.hasCertificate).length || 0;
+  const certificatesWithBadge = completedEvents?.filter((e) => e.hasCertificate) || [];
 
   return (
-    <div className="space-y-3 h-full flex flex-col justify-center">
-      <div className="text-center py-4">
-        <Trophy className="h-12 w-12 mx-auto mb-2 text-primary" />
-        <div className="text-3xl font-black">{certificatesCount}</div>
-        <p className="text-xs text-muted-foreground mt-1">Certificates Earned</p>
-      </div>
-
-      {completedEvents && completedEvents.length > 0 && (
-        <div className="space-y-2">
-          {completedEvents.slice(0, 1).map((event) => (
-            event.hasCertificate && (
-              <div
-                key={event._id}
-                className="border-2 border-black dark:border-white p-2 flex items-center justify-between"
-              >
-                <span className="text-xs font-bold truncate">{event.name}</span>
-                {event.certificateUrl && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={() => window.open(event.certificateUrl, "_blank")}
-                  >
-                    <Download className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-            )
-          ))}
+    <div className="space-y-3">
+      {certificatesWithBadge.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-4 gap-2">
+          <Trophy className="h-8 w-8 text-muted-foreground/40" />
+          <p className="text-[11px] font-bold uppercase text-muted-foreground tracking-widest">
+            NO CERTIFICATES YET
+          </p>
         </div>
+      ) : (
+        certificatesWithBadge.slice(0, 2).map((event) => (
+          <div
+            key={event._id}
+            className="border-2 border-black dark:border-white p-3 flex items-center gap-3 bg-white dark:bg-neutral-800"
+          >
+            <div className="h-10 w-10 border-2 border-black dark:border-white flex items-center justify-center bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
+              <Trophy className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-sm uppercase truncate">{event.name}</p>
+              <p className="text-[10px] text-muted-foreground">
+                Unlocked on {new Date(event.endDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+              </p>
+            </div>
+            {event.certificateUrl && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 flex-shrink-0"
+                onClick={() => window.open(event.certificateUrl, "_blank")}
+              >
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        ))
       )}
     </div>
   );

@@ -2,100 +2,81 @@ import { Protected } from "@/lib/protected-page";
 import { Dock } from "@/components/ui/dock";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
 import { Home, Calendar, Trophy, User, Settings } from "lucide-react";
-import { BentoGrid, BentoCard } from "@/components/ui/bento-grid";
 import { EventDiscoveryWidget } from "@/components/dashboard/EventDiscoveryWidget";
 import { RegisteredEventsWidget } from "@/components/dashboard/RegisteredEventsWidget";
 import { CertificatesWidget } from "@/components/dashboard/CertificatesWidget";
 import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
 import { ProfileWidget } from "@/components/dashboard/ProfileWidget";
+import { EventDiscoveryGrid } from "@/components/dashboard/EventDiscoveryGrid";
 
 export default function Dashboard() {
   const dockItems = [
-    { icon: <Home size={20} />, label: 'Dashboard', href: '/dashboard' },
+    { icon: <Home size={20} />, label: 'Home', href: '/dashboard' },
     { icon: <Calendar size={20} />, label: 'Events', href: '/events' },
-    { icon: <Trophy size={20} />, label: 'Certificates', href: '/certificates' },
+    { icon: <Trophy size={20} />, label: 'Trophy', href: '/certificates' },
     { icon: <User size={20} />, label: 'Profile', href: '/profile' },
     { icon: <Settings size={20} />, label: 'Settings', href: '/settings' }
   ];
 
   return (
     <Protected>
+      {/* Top Dock */}
       <Dock items={dockItems} />
-      
+
+      {/* Theme Switcher */}
       <div className="fixed top-0 right-6 z-50 pt-6">
         <ThemeSwitcher />
       </div>
-      
-      <div className="absolute top-20 sm:top-24 left-1/2 -translate-x-1/2 z-40">
-        <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-neutral-900 to-neutral-700/80 dark:from-white dark:to-white/80">
-            Dashboard
-          </h1>
-        </div>
-      </div>
 
-      <div className="container mx-auto px-4 pt-48 pb-24">
-        <BentoGrid className="grid-cols-1 md:grid-cols-6 auto-rows-[220px] gap-4">
-          {/* Top Left - Profile (Tall) */}
-          <BentoCard 
-            title="Your Profile" 
-            className="md:col-span-2 md:row-span-3"
-            gradient="from-purple-500/20 via-violet-500/10 to-purple-500/5"
-          >
+      <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 px-6 pt-24 pb-16">
+        {/* DASHBOARD Heading */}
+        <h1 className="text-5xl sm:text-6xl font-black uppercase tracking-tight text-black dark:text-white mb-8">
+          DASHBOARD
+        </h1>
+
+        {/* Main 3-column grid */}
+        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr_280px] gap-4 mb-12">
+          {/* Left Column - Profile */}
+          <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">YOUR PROFILE</p>
             <ProfileWidget />
-          </BentoCard>
+          </div>
 
-          {/* Top Middle - Discover Events */}
-          <BentoCard 
-            title="Discover Events" 
-            description="Find and register for upcoming events" 
-            className="md:col-span-2 md:row-span-2"
-            gradient="from-green-500/20 via-emerald-500/10 to-green-500/5"
-          >
-            <EventDiscoveryWidget />
-          </BentoCard>
-
-          {/* Top Right - Quick Stats */}
-          <BentoCard 
-            title="Quick Stats" 
-            className="md:col-span-2 md:row-span-1"
-            gradient="from-blue-500/20 via-cyan-500/10 to-blue-500/5"
-          >
-            <QuickStatsWidget />
-          </BentoCard>
-
-          {/* Middle Left - Registered Events (Wide & Tall) */}
-          <BentoCard 
-            title="Registered Events" 
-            description="Your upcoming events" 
-            className="md:col-span-2 md:row-span-2"
-            gradient="from-orange-500/20 via-amber-500/10 to-orange-500/5"
-          >
-            <RegisteredEventsWidget />
-          </BentoCard>
-
-          {/* Bottom Left - Certificates */}
-          <BentoCard 
-            title="Certificates" 
-            description="Your achievements"
-            className="md:col-span-2 md:row-span-1"
-            gradient="from-pink-500/20 via-rose-500/10 to-pink-500/5"
-          >
-            <CertificatesWidget />
-          </BentoCard>
-
-          {/* Bottom Middle - Additional Card */}
-          <BentoCard 
-            title="Event Discovery" 
-            description="Explore more"
-            className="md:col-span-2 md:row-span-1"
-            gradient="from-cyan-500/20 via-teal-500/10 to-cyan-500/5"
-          >
-            <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-muted-foreground">Coming soon...</p>
+          {/* Middle Column - Discover Events + Certificates */}
+          <div className="flex flex-col gap-4">
+            {/* Discover Events */}
+            <div className="border-2 border-black dark:border-white bg-[#c8f0e0] dark:bg-emerald-900/30 p-5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-3">DISCOVER EVENTS</p>
+              <EventDiscoveryWidget />
             </div>
-          </BentoCard>
-        </BentoGrid>
+
+            {/* Certificates */}
+            <div className="border-2 border-black dark:border-white bg-[#f5c8e8] dark:bg-pink-900/30 p-5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-3">CERTIFICATES</p>
+              <CertificatesWidget />
+            </div>
+          </div>
+
+          {/* Right Column - Quick Stats + Registered Events */}
+          <div className="flex flex-col gap-4">
+            {/* Quick Stats */}
+            <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">QUICK STATS</p>
+              <QuickStatsWidget />
+            </div>
+
+            {/* Registered Events */}
+            <div className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 p-5 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">REGISTERED EVENTS</p>
+              <RegisteredEventsWidget />
+            </div>
+          </div>
+        </div>
+
+        {/* EVENT DISCOVERY Section */}
+        <div className="mb-6">
+          <EventDiscoveryGrid />
+        </div>
       </div>
     </Protected>
   );
