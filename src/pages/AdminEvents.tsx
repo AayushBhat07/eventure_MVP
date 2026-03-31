@@ -192,7 +192,15 @@ function AdminEventsContent() {
 
   const handleParticipantExport = (format: "pdf" | "xlsx" | "csv") => {
     if (!selectedEvent) { toast.error("No event selected."); return; }
+    if (participants === undefined || teamRegistrations === undefined) {
+      toast.error("Data is still loading. Please wait and try again.");
+      return;
+    }
     const rows = buildAllParticipantRows();
+    if (rows.length === 0) {
+      toast.error("No participants to export.");
+      return;
+    }
     const eventName = selectedEvent.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const fileName = `${eventName}_participants`;
 
@@ -209,19 +217,34 @@ function AdminEventsContent() {
       doc.save(`${fileName}.pdf`);
       toast.success("Exported as PDF!");
     } else if (format === "xlsx") {
-      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const worksheet = XLSX.utils.json_to_sheet(rows.map(r => ({
+        Type: r.type,
+        Team: r.teamName,
+        Name: r.name,
+        'Roll No': r.rollNo,
+        Branch: r.branch,
+        Mobile: r.mobileNumber,
+        Email: r.email,
+      })));
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Participants");
       XLSX.writeFile(workbook, `${fileName}.xlsx`);
       toast.success("Exported as Excel!");
     } else if (format === "csv") {
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      const csv = XLSX.utils.sheet_to_csv(worksheet);
+      const headers = ['Type', 'Team', 'Name', 'Roll No', 'Branch', 'Mobile', 'Email'];
+      const csvLines = [
+        headers.join(','),
+        ...rows.map(r =>
+          [r.type, r.teamName, r.name, r.rollNo, r.branch, r.mobileNumber, r.email]
+            .map(v => `"${String(v).replace(/"/g, '""')}"`)
+            .join(',')
+        ),
+      ];
+      const csv = csvLines.join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
-      link.setAttribute("href", URL.createObjectURL(blob));
-      link.setAttribute("download", `${fileName}.csv`);
-      link.style.visibility = 'hidden';
+      link.href = URL.createObjectURL(blob);
+      link.download = `${fileName}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
