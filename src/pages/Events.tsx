@@ -44,16 +44,21 @@ function formatDate(ts: number) {
 }
 
 function getEventStatus(event: any): { label: string; color: string } {
+  // Use admin-set status from DB first
+  if (event.status === "completed") {
+    return { label: "COMPLETED", color: "bg-neutral-400 text-black border-black" };
+  }
+  if (event.status === "cancelled") {
+    return { label: "CANCELLED", color: "bg-red-400 text-black border-black" };
+  }
+  // For "active" events, derive ongoing/upcoming from dates
   const now = Date.now();
   const start = toTimestamp(event.startDate);
   const end = toTimestamp(event.endDate);
   if (now >= start && now <= end) {
     return { label: "ONGOING", color: "bg-yellow-400 text-black border-black" };
-  } else if (now < start) {
-    return { label: "UPCOMING", color: "bg-blue-500 text-white border-blue-700" };
-  } else {
-    return { label: "COMPLETED", color: "bg-neutral-400 text-black border-black" };
   }
+  return { label: "UPCOMING", color: "bg-blue-500 text-white border-blue-700" };
 }
 
 function EventCard({ event, index }: { event: any; index: number }) {
