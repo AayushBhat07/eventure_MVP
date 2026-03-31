@@ -26,14 +26,14 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     eventDate: "",
     eventTime: "",
     maxParticipants: "",
-    volunteerIds: [] as Id<"users">[],
+    volunteerIds: [] as Id<"teamMembers">[],
   });
 
-  const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"users">>>(new Set());
+  const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"teamMembers">>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const createEvent = useMutation(api.events.createEventAsAdmin);
-  const teamMembers = useQuery(api.users.listMembers);
+  const teamMembers = useQuery(api.team.getAllTeamMembers);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -57,7 +57,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     onClose();
   };
 
-  const handleVolunteerToggle = (volunteerId: Id<"users">) => {
+  const handleVolunteerToggle = (volunteerId: Id<"teamMembers">) => {
     setSelectedVolunteers(prev => {
       const newSet = new Set(prev);
       if (newSet.has(volunteerId)) {
@@ -234,13 +234,13 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
                   <div key={volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                     <button
                       type="button"
-                      onClick={() => handleVolunteerToggle(volunteer._id as Id<"users">)}
+                      onClick={() => handleVolunteerToggle(volunteer._id as Id<"teamMembers">)}
                       className="flex-shrink-0"
                       disabled={isSubmitting}
                     >
-                      {selectedVolunteers.has(volunteer._id as Id<"users">) ? (
+                      {selectedVolunteers.has(volunteer._id as Id<"teamMembers">) ? (
                         <CheckSquare className="h-5 w-5 text-primary" />
-                      ) : (
+                                      ) : (
                         <Square className="h-5 w-5 text-muted-foreground" />
                       )}
                     </button>
