@@ -123,9 +123,8 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
 
   const formatVolunteerDisplay = (member: any) => {
     const name = member.name || 'Unknown Name';
-    const branch = member.branch || 'N/A';
-    const rollNo = member.rollNo || 'N/A';
-    return `${name} (${branch} - ${rollNo})`;
+    const parts = [member.branch, member.rollNo].filter(Boolean);
+    return parts.length > 0 ? `${name} (${parts.join(' - ')})` : name;
   };
 
   // Memoize available volunteers from team members
