@@ -50,6 +50,7 @@ const schema = defineSchema({
     // Allow events created by either a user (users id) or an admin email string
     createdBy: v.union(v.id("users"), v.string()),
     status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
+    volunteerIds: v.optional(v.array(v.id("teamMembers"))),
   })
     .index("by_start_date", ["startDate"])
     .index("by_status", ["status"]),
