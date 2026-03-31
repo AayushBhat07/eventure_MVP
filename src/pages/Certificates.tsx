@@ -48,20 +48,20 @@ async function generateCertificate(userName: string, eventName: string): Promise
 
       // 2. Draw user name
       ctx.save();
-      ctx.font = `52.2px 'Liana', cursive`;
+      ctx.font = `52.2px 'Liana', serif`;
       ctx.fillStyle = "#1f2a44";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(userName, img.naturalWidth / 2, img.naturalHeight * 0.445);
+      ctx.fillText(userName, img.naturalWidth / 2, img.naturalHeight * 0.46);
       ctx.restore();
 
       // 3. Draw event name
       ctx.save();
-      ctx.font = `12px 'Open Sans', sans-serif`;
-      ctx.fillStyle = "#333";
+      ctx.font = `14px 'Open Sans', sans-serif`;
+      ctx.fillStyle = "#1f2a44";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(eventName, img.naturalWidth / 2, img.naturalHeight * 0.535);
+      ctx.fillText(eventName, img.naturalWidth / 2, img.naturalHeight * 0.565);
       ctx.restore();
 
       const imgData = canvas.toDataURL("image/png", 1.0);
