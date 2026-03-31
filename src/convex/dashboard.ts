@@ -107,7 +107,7 @@ export const getCompletedEvents = query({
     
     for (const registration of registrations) {
       const event = await ctx.db.get(registration.eventId);
-      if (event && event.endDate < now) {
+      if (event && (event.status === "completed" || event.endDate < now)) {
         // Check if user has a certificate for this event
         const certificate = await ctx.db
           .query("certificates")

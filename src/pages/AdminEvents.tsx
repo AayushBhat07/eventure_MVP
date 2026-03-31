@@ -474,7 +474,30 @@ function AdminEventsContent() {
                     <div className="space-y-2 text-sm">
                       <p><strong>Date:</strong> {new Date(event.startDate).toLocaleDateString()}</p>
                       <p><strong>Venue:</strong> {event.venue}</p>
-                      <p><strong>Status:</strong> {event.status}</p>
+                      <div className="flex items-center gap-2">
+                        <strong>Status:</strong>
+                        <select
+                          value={event.status}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value as "active" | "completed" | "cancelled";
+                            try {
+                              const result = await updateEventAsAdmin({ id: event._id, status: newStatus });
+                              if (result?.success) {
+                                toast.success(`Status updated to ${newStatus}`);
+                              } else {
+                                toast.error(result?.message || "Failed to update status");
+                              }
+                            } catch {
+                              toast.error("Failed to update status");
+                            }
+                          }}
+                          className="border-2 border-black dark:border-white bg-background text-foreground text-xs font-mono px-2 py-1 cursor-pointer focus:outline-none"
+                        >
+                          <option value="active">Active</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
                     </div>
                   </CardContent>
                   <CardFooter className="p-4 border-t-2 border-black dark:border-white bg-muted/20">
