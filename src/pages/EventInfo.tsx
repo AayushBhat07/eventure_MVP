@@ -12,6 +12,8 @@ import {
   MapPin,
   Users,
   CheckCircle,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 function toTimestamp(val: number | Date | unknown): number {
@@ -36,18 +38,40 @@ function formatTime(ts: number) {
   });
 }
 
+type TeamMember = {
+  name: string;
+  rollNo: string;
+  branch: string;
+  mobileNumber: string;
+  email: string;
+};
+
+const emptyMember = (): TeamMember => ({ name: "", rollNo: "", branch: "", mobileNumber: "", email: "" });
+
 export default function EventInfo() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
 
+  // Team registration state
+  const [teamName, setTeamName] = useState("");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([emptyMember()]);
+
   const event = useQuery(api.events.getById, { id: eventId as Id<"events"> });
   const allTeamMembers = useQuery(api.team.getAllTeamMembers);
   const userRegistration = useQuery(api.events.getUserRegistration, { eventId: eventId as Id<"events"> });
+  const teamRegistration = useQuery(api.events.getTeamRegistration, { eventId: eventId as Id<"events"> });
   const participants = useQuery(api.events.getEventParticipants, { eventId: eventId as Id<"events"> });
   const registerForEvent = useMutation(api.events.registerForEvent);
+  const registerTeamForEvent = useMutation(api.events.registerTeamForEvent);
 
-  if (event === undefined || allTeamMembers === undefined || userRegistration === undefined || participants === undefined) {
+  if (
+    event === undefined ||
+    allTeamMembers === undefined ||
+    userRegistration === undefined ||
+    teamRegistration === undefined ||
+    participants === undefined
+  ) {
     return (
       <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 flex items-center justify-center">
         <div className="text-sm font-black uppercase text-muted-foreground">Loading event...</div>
@@ -96,9 +120,13 @@ export default function EventInfo() {
     ? allTeamMembers.filter((m) => volunteerIds.includes(m._id as Id<"teamMembers">))
     : [];
 
-  const isAlreadyRegistered = !!userRegistration;
   const isEventClosed = eventStatus === "Completed" || event.status === "cancelled";
   const registrationCount = participants.length;
+  const eventType = (event as any).eventType as "individual" | "team" | undefined ?? "individual";
+
+  // Individual registration
+  const isAlreadyRegistered = !!userRegistration;
+  const isTeamAlreadyRegistered = !!teamRegistration;
 
   const handleRegister = async () => {
     setIsRegistering(true);
@@ -113,6 +141,47 @@ export default function EventInfo() {
       toast.error(err?.message || "Registration failed. Please try again.");
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleTeamRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamName.trim()) {
+      toast.error("Please enter a team name");
+      return;
+    }
+    const validMembers = teamMembers.filter(m => m.name.trim());
+    if (validMembers.length === 0) {
+      toast.error("Please add at least one team member");
+      return;
+    }
+    setIsRegistering(true);
+    try {
+      const result = await registerTeamForEvent({
+        eventId: eventId as Id<"events">,
+        teamName: teamName.trim(),
+        members: validMembers,
+      });
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Team registration failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const updateMember = (index: number, field: keyof TeamMember, value: string) => {
+    setTeamMembers(prev => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+  };
+
+  const addMember = () => setTeamMembers(prev => [...prev, emptyMember()]);
+  const removeMember = (index: number) => {
+    if (teamMembers.length > 1) {
+      setTeamMembers(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -143,9 +212,12 @@ export default function EventInfo() {
           transition={{ delay: 0.1 }}
           className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] p-8 mb-8"
         >
-          <div className="mb-6">
+          <div className="mb-6 flex items-center gap-3 flex-wrap">
             <span className={`inline-block text-xs font-black uppercase px-3 py-1.5 border-2 ${statusColors[eventStatus]} shadow-[3px_3px_0px_#000] dark:shadow-[3px_3px_0px_#fff]`}>
               {eventStatus}
+            </span>
+            <span className="inline-block text-xs font-black uppercase px-3 py-1.5 border-2 border-black dark:border-white bg-[#f5f0e8] dark:bg-neutral-800 text-black dark:text-white">
+              {eventType === "team" ? "TEAM EVENT" : "INDIVIDUAL EVENT"}
             </span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-black uppercase text-black dark:text-white mb-6 leading-none">
@@ -254,34 +326,124 @@ export default function EventInfo() {
                 {event.status === "cancelled" ? "This event has been cancelled" : "Registration is closed"}
               </p>
             </div>
-          ) : isAlreadyRegistered ? (
-            <div className="border-2 border-black dark:border-white bg-[#c8f0e0] dark:bg-emerald-900/30 p-6 flex items-center gap-4">
-              <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-black uppercase text-black dark:text-white">You're Registered!</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Registered on {new Date(userRegistration.registrationDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                </p>
+          ) : eventType === "team" ? (
+            /* TEAM REGISTRATION */
+            isTeamAlreadyRegistered ? (
+              <div className="border-2 border-black dark:border-white bg-[#c8f0e0] dark:bg-emerald-900/30 p-6 flex items-center gap-4">
+                <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-black uppercase text-black dark:text-white">Team Registered!</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Team "{teamRegistration.teamName}" — {teamRegistration.members.length} member{teamRegistration.members.length !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Registered on {new Date(teamRegistration.registrationDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <form onSubmit={handleTeamRegister} className="space-y-6">
+                <p className="text-sm text-muted-foreground">Register your team for this event. Add all team members below.</p>
+
+                {/* Team Name */}
+                <div>
+                  <label className="text-xs font-black uppercase text-black dark:text-white block mb-1">Team Name *</label>
+                  <input
+                    type="text"
+                    value={teamName}
+                    onChange={e => setTeamName(e.target.value)}
+                    placeholder="Enter team name"
+                    className="w-full border-2 border-black dark:border-white bg-[#f5f0e8] dark:bg-neutral-800 text-black dark:text-white px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                    required
+                  />
+                </div>
+
+                {/* Team Members */}
+                <div>
+                  <label className="text-xs font-black uppercase text-black dark:text-white block mb-3">Team Members *</label>
+                  <div className="space-y-4">
+                    {teamMembers.map((member, index) => (
+                      <div key={index} className="border-2 border-black dark:border-white p-4 bg-[#f5f0e8] dark:bg-neutral-800 relative">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-black uppercase text-black dark:text-white">Member {index + 1}</span>
+                          {teamMembers.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeMember(index)}
+                              className="text-muted-foreground hover:text-black dark:hover:text-white transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {(["name", "rollNo", "branch", "mobileNumber", "email"] as const).map(field => (
+                            <input
+                              key={field}
+                              type={field === "email" ? "email" : "text"}
+                              value={member[field]}
+                              onChange={e => updateMember(index, field, e.target.value)}
+                              placeholder={field === "rollNo" ? "Roll No" : field === "mobileNumber" ? "Mobile Number" : field.charAt(0).toUpperCase() + field.slice(1)}
+                              className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 text-black dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={addMember}
+                    className="mt-3 flex items-center gap-2 border-2 border-dashed border-black dark:border-white px-4 py-2 text-xs font-black uppercase text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors w-full justify-center"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Member
+                  </button>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isRegistering}
+                    className="border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black px-8 py-3 text-sm font-black uppercase hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:shadow-[2px_2px_0px_#555] hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRegistering ? "Registering..." : "Register Team"}
+                  </button>
+                </div>
+              </form>
+            )
           ) : (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">
-                  Register to participate in this event.
-                  {event.maxParticipants && (
-                    <span className="ml-1 font-semibold">Max {event.maxParticipants} participants.</span>
-                  )}
-                </p>
+            /* INDIVIDUAL REGISTRATION */
+            isAlreadyRegistered ? (
+              <div className="border-2 border-black dark:border-white bg-[#c8f0e0] dark:bg-emerald-900/30 p-6 flex items-center gap-4">
+                <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-black uppercase text-black dark:text-white">You're Registered!</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Registered on {new Date(userRegistration.registrationDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={handleRegister}
-                disabled={isRegistering}
-                className="border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black px-8 py-3 text-sm font-black uppercase hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:shadow-[2px_2px_0px_#555] hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isRegistering ? "Registering..." : "Register for Event"}
-              </button>
-            </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">
+                    Register to participate in this event.
+                    {event.maxParticipants && (
+                      <span className="ml-1 font-semibold">Max {event.maxParticipants} participants.</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={handleRegister}
+                  disabled={isRegistering}
+                  className="border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black px-8 py-3 text-sm font-black uppercase hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:shadow-[2px_2px_0px_#555] hover:translate-x-[2px] hover:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isRegistering ? "Registering..." : "Register for Event"}
+                </button>
+              </div>
+            )
           )}
         </motion.div>
       </div>

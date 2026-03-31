@@ -122,6 +122,22 @@ const schema = defineSchema({
     .index("by_name", ["name"])
     .index("by_role", ["role"]),
 
+  teamRegistrations: defineTable({
+    eventId: v.id("events"),
+    registeredByUserId: v.id("users"),
+    teamName: v.string(),
+    registrationDate: v.number(),
+    members: v.array(v.object({
+      name: v.string(),
+      rollNo: v.string(),
+      branch: v.string(),
+      mobileNumber: v.string(),
+      email: v.string(),
+    })),
+  }).index("by_event", ["eventId"])
+    .index("by_user", ["registeredByUserId"])
+    .index("by_user_and_event", ["registeredByUserId", "eventId"]),
+
 },
 {
   schemaValidation: false

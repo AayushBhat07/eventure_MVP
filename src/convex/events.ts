@@ -459,3 +459,68 @@ export const getUserRegistration = query({
       .unique();
   },
 });
+
+export const registerTeamForEvent = mutation({
+  args: {
+    eventId: v.id("events"),
+    teamName: v.string(),
+    members: v.array(v.object({
+      name: v.string(),
+      rollNo: v.string(),
+      branch: v.string(),
+      mobileNumber: v.string(),
+      email: v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return { success: false, message: "User not authenticated" };
+    }
+
+    // Check if already registered
+    const existing = await ctx.db
+      .query("teamRegistrations")
+      .withIndex("by_user_and_event", (q) =>
+        q.eq("registeredByUserId", user._id).eq("eventId", args.eventId)
+      )
+      .unique();
+
+    if (existing) {
+      return { success: false, message: "Your team is already registered for this event" };
+    }
+
+    if (!args.teamName.trim()) {
+      return { success: false, message: "Team name is required" };
+    }
+
+    if (args.members.length === 0) {
+      return { success: false, message: "At least one team member is required" };
+    }
+
+    await ctx.db.insert("teamRegistrations", {
+      eventId: args.eventId,
+      registeredByUserId: user._id,
+      teamName: args.teamName.trim(),
+      registrationDate: Date.now(),
+      members: args.members,
+    });
+
+    return { success: true, message: "Team registered successfully!" };
+  },
+});
+
+export const getTeamRegistration = query({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
+
+    return await ctx.db
+      .query("teamRegistrations")
+      .withIndex("by_user_and_event", (q) =>
+        q.eq("registeredByUserId", user._id).eq("eventId", args.eventId)
+      )
+      .unique();
+  },
+});
