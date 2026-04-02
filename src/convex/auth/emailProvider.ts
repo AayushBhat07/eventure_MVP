@@ -75,16 +75,46 @@ export class ResendProvider implements EmailProvider {
 
 export class VlyEmailProvider implements EmailProvider {
   constructor(private apiKey: string) {}
-  
-  async sendOtp(email: string, otp: string, appName: string): Promise<void> {
-    const { createVlyIntegrations } = await import('@vly-ai/integrations');
-    const vly = createVlyIntegrations({
-      deploymentToken: this.apiKey,
-      debug: false,
+
+  private async sendVlyEmail(payload: {
+    to: string[];
+    subject: string;
+    html: string;
+    text: string;
+  }): Promise<void> {
+    const keyPreview = this.apiKey ? `${this.apiKey.substring(0, 6)}...${this.apiKey.substring(this.apiKey.length - 4)}` : "MISSING";
+    console.log(`[VlyEmail] Sending to ${payload.to.join(",")} | key: ${keyPreview} | endpoint: https://integrations.vly.ai/v1/email/send`);
+
+    const response = await fetch("https://integrations.vly.ai/v1/email/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        "X-Vly-Version": "0.1.0",
+      },
+      body: JSON.stringify({
+        to: payload.to,
+        from: "noreply@project.vly.sh",
+        subject: payload.subject,
+        html: payload.html,
+        text: payload.text,
+      }),
     });
 
-    const result = await vly.email.send({
-      to: email,
+    const responseData = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errorMsg = responseData?.error || `Request failed with status ${response.status}: ${response.statusText}`;
+      console.error("[VlyEmail] API error:", { status: response.status, statusText: response.statusText, body: JSON.stringify(responseData), keyPreview });
+      throw new Error(errorMsg);
+    }
+
+    console.log("[VlyEmail] Email sent successfully:", { id: responseData?.id, status: responseData?.status });
+  }
+  
+  async sendOtp(email: string, otp: string, appName: string): Promise<void> {
+    await this.sendVlyEmail({
+      to: [email],
       subject: `Your ${appName} verification code`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -99,21 +129,11 @@ export class VlyEmailProvider implements EmailProvider {
       `,
       text: `Your ${appName} verification code is: ${otp}. This code will expire in 15 minutes.`,
     });
-
-    if (!result.success) {
-      throw new Error(`Failed to send OTP: ${result.error || 'Unknown error'}`);
-    }
   }
 
   async sendMagicLink(email: string, magicLink: string, appName: string): Promise<void> {
-    const { createVlyIntegrations } = await import('@vly-ai/integrations');
-    const vly = createVlyIntegrations({
-      deploymentToken: this.apiKey,
-      debug: false,
-    });
-
-    const result = await vly.email.send({
-      to: email,
+    await this.sendVlyEmail({
+      to: [email],
       subject: `Sign in to ${appName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -134,10 +154,6 @@ export class VlyEmailProvider implements EmailProvider {
       `,
       text: `Sign in to ${appName}: ${magicLink}. This link will expire in 15 minutes.`,
     });
-
-    if (!result.success) {
-      throw new Error(`Failed to send magic link: ${result.error || 'Unknown error'}`);
-    }
   }
 }
 
