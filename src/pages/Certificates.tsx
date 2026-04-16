@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import jsPDF from "jspdf";
 
-const TEMPLATE_URL = "/assets/Certificate_template.png";
+const TEMPLATE_URL = "/assets/Template.png";
 
 async function loadFont(name: string, url: string): Promise<void> {
   try {
@@ -52,7 +52,7 @@ async function generateCertificate(userName: string, eventName: string): Promise
       ctx.fillStyle = "#1f2a44";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(userName, img.naturalWidth / 2, img.naturalHeight * 0.46);
+      ctx.fillText(userName, img.naturalWidth / 2, img.naturalHeight * 0.36);
       ctx.restore();
 
       // 3. Draw event name (centered below "for completing the")
@@ -61,7 +61,7 @@ async function generateCertificate(userName: string, eventName: string): Promise
       ctx.fillStyle = "#1f2a44";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(eventName, img.naturalWidth / 2, img.naturalHeight * 0.60);
+      ctx.fillText(eventName, img.naturalWidth / 2, img.naturalHeight * 0.55);
       ctx.restore();
 
       const imgData = canvas.toDataURL("image/png", 1.0);
