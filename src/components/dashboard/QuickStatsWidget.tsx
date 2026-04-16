@@ -1,6 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Calendar, Award, Activity } from "lucide-react";
+import { Calendar, Award, Activity, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function QuickStatsWidget() {
@@ -10,10 +10,16 @@ export function QuickStatsWidget() {
   const now = Date.now();
 
   const totalEvents = allEvents?.length ?? 0;
+  const eventsDone = completedEvents?.length ?? 0;
   const totalCertificates = completedEvents?.filter(e => e.hasCertificate).length ?? 0;
   const activeEvents = allEvents?.filter(e => e.startDate <= now && e.endDate >= now).length ?? 0;
 
   const statItems = [
+    {
+      icon: CheckCircle,
+      label: "EVENTS DONE",
+      value: eventsDone,
+    },
     {
       icon: Calendar,
       label: "EVENTS",
