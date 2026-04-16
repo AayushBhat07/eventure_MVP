@@ -66,7 +66,8 @@ export const getUserProfile = query({
       rollNo: user.rollNo,
       branch: user.branch,
       mobileNumber: user.mobileNumber,
-      email: user.email
+      email: user.email,
+      avatarUrl: user.avatarUrl,
     };
   },
 });
@@ -118,5 +119,33 @@ export const updateCurrentUserProfile = mutation({
       mobileNumber: args.mobileNumber,
     });
     return { success: true, message: "Profile updated successfully" };
+  },
+});
+
+export const ensureAvatarUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
+    if (user.avatarUrl) return user.avatarUrl;
+    
+    // Generate default avatar URL using bottts style
+    const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${user._id}`;
+    await ctx.db.patch(user._id, { avatarUrl });
+    return avatarUrl;
+  },
+});
+
+export const updateAvatarUrl = mutation({
+  args: {
+    avatarUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+    await ctx.db.patch(user._id, { avatarUrl: args.avatarUrl });
+    return { success: true, message: "Avatar updated successfully" };
   },
 });

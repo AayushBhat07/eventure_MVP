@@ -1,14 +1,26 @@
 import { Protected } from "@/lib/protected-page";
 import { Dock } from "@/components/ui/dock";
-import { Home, Calendar, User, LayoutGrid, Pencil, LogOut, Moon, Sun, Settings, Trophy, CheckCircle } from "lucide-react";
+import { Home, Calendar, User, LayoutGrid, Pencil, LogOut, Moon, Sun, Settings, Trophy, CheckCircle, Palette } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/components/theme-provider";
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
+
+const AVATAR_STYLES = [
+  { id: "bottts", label: "Robots" },
+  { id: "adventurer", label: "Fantasy" },
+  { id: "avataaars", label: "Cartoon" },
+  { id: "lorelei", label: "Illustrated" },
+  { id: "micah", label: "Colorful" },
+] as const;
+
+function getAvatarUrl(style: string, seed: string) {
+  return `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
+}
 
 function ProfileHeader() {
   const { theme, setTheme } = useTheme();
@@ -27,11 +39,13 @@ function ProfileHeader() {
   );
 }
 
-function ProfileCard({ user }: { user: any }) {
+function ProfileCard({ user, onChangeAvatar }: { user: any; onChangeAvatar: () => void }) {
   const displayName = user?.name || "User";
   const nameParts = displayName.split(" ");
   const firstName = nameParts[0]?.toUpperCase() || "";
   const lastName = nameParts.slice(1).join(" ").toUpperCase() || "";
+
+  const avatarSrc = user?.avatarUrl || (user?._id ? getAvatarUrl("bottts", user._id) : null);
 
   return (
     <motion.div
@@ -41,14 +55,23 @@ function ProfileCard({ user }: { user: any }) {
       className="border-[3px] border-black dark:border-white shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] bg-white dark:bg-neutral-900 p-6 md:p-8 flex flex-col sm:flex-row gap-6 items-start"
     >
       {/* Profile Image */}
-      <div className="w-32 h-40 md:w-36 md:h-44 border-2 border-black dark:border-white bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex-shrink-0">
-        {user?.image ? (
-          <img src={user.image} alt={displayName} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-black dark:bg-white text-white dark:text-black text-3xl font-black">
-            {firstName.charAt(0)}{lastName.charAt(0) || firstName.charAt(1) || ""}
-          </div>
-        )}
+      <div className="relative group flex-shrink-0">
+        <div className="w-32 h-40 md:w-36 md:h-44 border-2 border-black dark:border-white bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+          {avatarSrc ? (
+            <img src={avatarSrc} alt={displayName} className="w-full h-full object-cover p-2" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-black dark:bg-white text-white dark:text-black text-3xl font-black">
+              {firstName.charAt(0)}{lastName.charAt(0) || firstName.charAt(1) || ""}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={onChangeAvatar}
+          className="absolute bottom-1 right-1 w-8 h-8 bg-[#6D28D9] border-2 border-black dark:border-white text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:scale-110"
+          title="Change Avatar"
+        >
+          <Palette size={14} />
+        </button>
       </div>
 
       {/* Info */}
@@ -71,6 +94,96 @@ function ProfileCard({ user }: { user: any }) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function ChangeAvatarModal({ user, onClose }: { user: any; onClose: () => void }) {
+  const updateAvatar = useMutation(api.users.updateAvatarUrl);
+  const [selectedStyle, setSelectedStyle] = useState("bottts");
+  const [saving, setSaving] = useState(false);
+  const seed = user?._id || "default";
+
+  // Detect current style from avatarUrl
+  useEffect(() => {
+    if (user?.avatarUrl) {
+      const match = user.avatarUrl.match(/7\.x\/([^/]+)\//);
+      if (match) setSelectedStyle(match[1]);
+    }
+  }, [user?.avatarUrl]);
+
+  const previewUrl = getAvatarUrl(selectedStyle, seed);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateAvatar({ avatarUrl: previewUrl });
+      toast.success("Avatar updated!");
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update avatar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md border-[3px] border-black dark:border-white shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] bg-[#FDF8F3] dark:bg-neutral-900 p-6"
+      >
+        <h2 className="text-xl font-black uppercase tracking-tight text-black dark:text-white mb-5">Change Avatar</h2>
+
+        {/* Preview */}
+        <div className="flex justify-center mb-6">
+          <div className="w-28 h-28 border-[3px] border-black dark:border-white bg-white dark:bg-neutral-800 overflow-hidden">
+            <img src={previewUrl} alt="Avatar preview" className="w-full h-full object-cover p-2" />
+          </div>
+        </div>
+
+        {/* Style picker */}
+        <div className="grid grid-cols-5 gap-2 mb-6">
+          {AVATAR_STYLES.map((style) => {
+            const styleUrl = getAvatarUrl(style.id, seed);
+            const isActive = selectedStyle === style.id;
+            return (
+              <button
+                key={style.id}
+                onClick={() => setSelectedStyle(style.id)}
+                className={`flex flex-col items-center gap-1 p-2 border-2 transition-all cursor-pointer ${
+                  isActive
+                    ? "border-[#6D28D9] bg-purple-50 dark:bg-purple-900/30 shadow-[3px_3px_0px_0px_#6D28D9]"
+                    : "border-black dark:border-white bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700"
+                }`}
+              >
+                <img src={styleUrl} alt={style.label} className="w-10 h-10" />
+                <span className="text-[8px] font-bold uppercase tracking-wide text-black dark:text-white">{style.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 bg-[#6D28D9] border-2 border-black dark:border-white text-white font-black uppercase tracking-wide py-2.5 shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] dark:hover:shadow-[2px_2px_0px_0px_#fff] transition-all cursor-pointer disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save Avatar"}
+          </button>
+          <button
+            onClick={onClose}
+            className="px-5 bg-white dark:bg-neutral-800 border-2 border-black dark:border-white text-black dark:text-white font-black uppercase tracking-wide py-2.5 shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#000] dark:hover:shadow-[2px_2px_0px_0px_#fff] transition-all cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -221,6 +334,15 @@ export default function Profile() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const ensureAvatar = useMutation(api.users.ensureAvatarUrl);
+
+  // Ensure avatar URL is set on first visit
+  useEffect(() => {
+    if (user && !user.avatarUrl) {
+      ensureAvatar().catch(() => {});
+    }
+  }, [user, ensureAvatar]);
 
   const handleLogout = async () => {
     await signOut();
@@ -244,7 +366,7 @@ export default function Profile() {
         <ProfileHeader />
 
         <main className="flex-1 w-full max-w-3xl mx-auto px-4 md:px-6 pt-8 pb-16 flex flex-col gap-5">
-          <ProfileCard user={user} />
+          <ProfileCard user={user} onChangeAvatar={() => setAvatarOpen(true)} />
 
           {/* Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -260,7 +382,10 @@ export default function Profile() {
           <ActionButtons onEdit={() => setEditOpen(true)} onLogout={handleLogout} />
         </main>
 
-        {editOpen && <EditProfileModal user={user} onClose={() => setEditOpen(false)} />}
+        <AnimatePresence>
+          {editOpen && <EditProfileModal user={user} onClose={() => setEditOpen(false)} />}
+          {avatarOpen && <ChangeAvatarModal user={user} onClose={() => setAvatarOpen(false)} />}
+        </AnimatePresence>
       </div>
     </Protected>
   );

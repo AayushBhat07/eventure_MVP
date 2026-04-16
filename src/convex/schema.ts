@@ -26,6 +26,7 @@ const schema = defineSchema({
     rollNo: v.optional(v.string()),
     branch: v.optional(v.string()),
     mobileNumber: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
   })
     .index("email", ["email"]),
 
