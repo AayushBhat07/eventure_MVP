@@ -12,16 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 import { Id } from '@/convex/_generated/dataModel';
 
-const ADMIN_NAV_ITEMS = [
-  { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
-  { name: 'Events', url: '/admin-events', icon: Calendar },
-  { name: 'Check-In', url: '/admin-checkin', icon: ScanLine },
-  { name: 'Analytics', url: '/admin-event-analytics', icon: BarChart3 },
-  { name: 'Tickets', url: '/admin-tickets', icon: Ticket },
-  { name: 'Communication', url: '/admin-communication', icon: MessageSquare },
-  { name: 'Team', url: '/admin-team', icon: Users },
-  { name: 'Settings', url: '/admin-settings', icon: Settings },
-];
+import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
 
 const DOCK_ITEMS = [
   { icon: <Home size={20} />, label: 'Dashboard', href: '/admin-dashboard' },

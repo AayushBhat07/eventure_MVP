@@ -1,7 +1,6 @@
 /* eslint-disable */
 // @ts-nocheck
 import React, { useState } from 'react';
-import { MenuBar } from '@/components/ui/glow-menu';
 import {
   Home,
   Calendar,
@@ -15,6 +14,8 @@ import {
   CheckSquare,
   Square
 } from "lucide-react";
+import { AdminNavBar } from '@/components/admin/admin-navbar';
+import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -312,30 +313,15 @@ function AdminEventsContent() {
     }
   };
 
-  const menuItems = [
-    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
-    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
-    { name: 'Check-In', label: 'Check-In', href: '/admin-checkin', icon: ScanLine, gradient: 'from-teal-500 to-cyan-500', iconColor: 'text-teal-500' },
-    { name: 'Analytics', label: 'Analytics', href: '/admin-event-analytics', icon: BarChart3, gradient: 'from-indigo-500 to-violet-500', iconColor: 'text-indigo-500' },
-    { name: 'Tickets', label: 'Tickets', href: '/admin-tickets', icon: Ticket, gradient: 'from-amber-500 to-yellow-500', iconColor: 'text-amber-500' },
-    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
-    { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
-  ];
-
-  const handleMenuItemClick = (itemName: string) => {
-    setActiveMenuItem(itemName);
-    const routes: Record<string, string> = { Dashboard: '/admin-dashboard', Events: '/admin-events', 'Check-In': '/admin-checkin', Tickets: '/admin-tickets', Team: '/admin-team', Settings: '/admin-settings' };
-    if (routes[itemName]) navigate(routes[itemName]);
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <BackgroundPaths title="" />
       </div>
       <div className="relative z-10">
-        <header className="border-b-2 border-black dark:border-white/20 p-4">
-          <div className="flex justify-between items-center">
+        <AdminNavBar items={ADMIN_NAV_ITEMS} />
+        <div className="pt-16 px-4">
+          <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
             {(() => {
               try {
@@ -358,13 +344,9 @@ function AdminEventsContent() {
               );
             })()}
           </div>
-        </header>
-
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
 
-        <div className="container mx-auto px-4 py-8 pt-20">
+        <div className="container mx-auto px-4 py-8">
           {!allEvents ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <Loader2 className="h-12 w-12 animate-spin" />

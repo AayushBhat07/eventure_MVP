@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Link, useLocation } from "react-router";
-import { LucideIcon } from "lucide-react"
+import { LucideIcon, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getAdminSession } from "@/hooks/use-admin-session"
 
@@ -16,6 +16,22 @@ interface NavItem {
 interface AdminNavBarProps {
   items: NavItem[]
   className?: string
+}
+
+function getInitials(name?: string, email?: string): string {
+  if (name && name.trim()) {
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((w) => w.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  if (email) {
+    return email.charAt(0).toUpperCase();
+  }
+  return "?";
 }
 
 export function AdminNavBar({ items, className }: AdminNavBarProps) {
@@ -43,6 +59,7 @@ export function AdminNavBar({ items, className }: AdminNavBarProps) {
 
   const adminSession = getAdminSession();
   const isTeamMember = adminSession?.role === "teammember";
+  const initials = getInitials(adminSession?.name, adminSession?.email);
 
   return (
     <div
@@ -99,6 +116,11 @@ export function AdminNavBar({ items, className }: AdminNavBarProps) {
               </Link>
             )
           })}
+
+          {/* Admin Avatar with Initials */}
+          <div className="w-9 h-9 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-sm rounded-full ml-2 flex-shrink-0">
+            {initials}
+          </div>
         </div>
       </div>
     </div>

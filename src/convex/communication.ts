@@ -569,3 +569,69 @@ export const getUnreadNotificationCount = query({
     return unread.length;
   },
 });
+
+// Query for user dashboard - get latest broadcast messages
+export const getLatestBroadcasts = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get latest messages from announcements and urgent channels
+    const announcements = await ctx.db
+      .query("admin_communication_messages")
+      .withIndex("by_channel", (q) => q.eq("channel", "announcements"))
+      .order("desc")
+      .take(5);
+
+    const urgent = await ctx.db
+      .query("admin_communication_messages")
+      .withIndex("by_channel", (q) => q.eq("channel", "urgent"))
+      .order("desc")
+      .take(3);
+
+    // Also get general messages
+    const allGeneral = await ctx.db
+      .query("admin_communication_messages")
+      .order("desc")
+      .take(50);
+    const general = allGeneral
+      .filter((m) => !(m as any).channel || (m as any).channel === "general")
+      .slice(0, 5);
+
+    // Combine and sort by creation time, take latest 8
+    const combined = [...announcements, ...urgent, ...general];
+    // Deduplicate by _id
+    const seen = new Set<string>();
+    const unique = combined.filter((m) => {
+      if (seen.has(m._id)) return false;
+      seen.add(m._id);
+      return true;
+    });
+    // Sort by creation time desc
+    unique.sort((a, b) => b._creationTime - a._creationTime);
+
+    // Resolve author names
+    const result = await Promise.all(
+      unique.slice(0, 8).map(async (message) => {
+        let authorName = "Admin";
+        try {
+          const author = await ctx.db.get(message.authorId);
+          if (author && (author as any).name) {
+            authorName = (author as any).name;
+          } else if (author && (author as any).email) {
+            authorName = (author as any).email;
+          }
+        } catch {
+          // ignore
+        }
+        return {
+          _id: message._id,
+          content: message.content,
+          channel: (message as any).channel || "general",
+          authorName,
+          _creationTime: message._creationTime,
+        };
+      })
+    );
+
+    return result;
+  },
+});

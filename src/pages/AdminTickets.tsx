@@ -18,7 +18,8 @@ import {
   ScanLine,
   BarChart3,
 } from 'lucide-react';
-import { MenuBar } from '@/components/ui/glow-menu';
+import { AdminNavBar } from '@/components/admin/admin-navbar';
+import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
 import { BackgroundPaths } from '@/components/ui/background-paths';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -318,8 +319,9 @@ function AdminTicketsContent() {
         <BackgroundPaths title="" />
       </div>
       <div className="relative z-10">
-        <header className="border-b-2 border-black dark:border-white/20 p-4">
-          <div className="flex justify-between items-center">
+        <AdminNavBar items={ADMIN_NAV_ITEMS} />
+        <div className="pt-16 px-4">
+          <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">SUPPORT TICKETS</h1>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1 bg-green-200 dark:bg-green-900/30">
@@ -332,13 +334,9 @@ function AdminTicketsContent() {
               </div>
             </div>
           </div>
-        </header>
-
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
         </div>
 
-        <div className="container mx-auto px-4 py-8 pt-20">
+        <div className="container mx-auto px-4 py-8">
           {/* Filter Tabs */}
           <div className="flex gap-2 mb-6">
             {(['all', 'open', 'closed'] as StatusFilter[]).map((filter) => (

@@ -8,11 +8,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MenuBar } from "@/components/ui/glow-menu";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router";
-import { Home, Calendar, Users, Settings, Ticket, ScanLine, BarChart3 } from "lucide-react";
+import { AdminNavBar } from "@/components/admin/admin-navbar";
+import { ADMIN_NAV_ITEMS } from "@/components/admin/admin-nav-items";
 
 interface AdminUser {
   _id: Id<"users">;
@@ -38,8 +38,6 @@ function AdminSettingsContent() {
     email: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [activeMenuItem, setActiveMenuItem] = useState("Settings");
-
   // Get admin profile data
   const adminProfile = useQuery(
     api.users.currentUser
@@ -169,29 +167,17 @@ function AdminSettingsContent() {
     }
   };
 
-  const menuItems = [
-    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
-    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
-    { name: 'Check-In', label: 'Check-In', href: '/admin-checkin', icon: ScanLine, gradient: 'from-teal-500 to-cyan-500', iconColor: 'text-teal-500' },
-    { name: 'Analytics', label: 'Analytics', href: '/admin-event-analytics', icon: BarChart3, gradient: 'from-indigo-500 to-violet-500', iconColor: 'text-indigo-500' },
-    { name: 'Tickets', label: 'Tickets', href: '/admin-tickets', icon: Ticket, gradient: 'from-amber-500 to-yellow-500', iconColor: 'text-amber-500' },
-    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
-    { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
-  ];
-
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
       <div className="fixed inset-0 z-0 pointer-events-none">
         <BackgroundPaths title="" />
       </div>
       <div className="relative z-10">
-      {/* Menu Bar */}
-      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-        <MenuBar items={menuItems} onItemClick={(item) => navigate(item)} activeItem={activeMenuItem}/>
-      </div>
+      {/* Admin Navbar */}
+      <AdminNavBar items={ADMIN_NAV_ITEMS} />
 
       {/* Main Content */}
-      <div className="pt-32 px-4 flex justify-center">
+      <div className="pt-24 px-4 flex justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

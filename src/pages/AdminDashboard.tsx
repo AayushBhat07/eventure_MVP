@@ -23,8 +23,6 @@ import {
   Target,
   User,
   Plus,
-  CheckSquare,
-  Square,
   Settings,
   Bell,
   Home,
@@ -38,10 +36,12 @@ import { toast } from "sonner";
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
-import { MenuBar } from '@/components/ui/glow-menu';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { useNavigate } from "react-router";
 import { CreateAdminModal } from '@/components/admin/CreateAdminModal';
+import { AdminNavBar } from '@/components/admin/admin-navbar';
+import { ADMIN_NAV_ITEMS } from '@/components/admin/admin-nav-items';
+import { getAdminSession } from '@/hooks/use-admin-session';
 
 function AdminDashboardContent() {
   const navigate = useNavigate();
@@ -58,7 +58,7 @@ function AdminDashboardContent() {
   const totalEvents = allEvents?.length || 0;
   const upcomingEventsCount = upcomingEvents?.length || 0;
   const completedEvents = useQuery(api.events.getCompletedEvents);
-  const activeParticipants = 0; // This would need to be calculated from registrations
+  const activeParticipants = 0;
 
   const stats = [
     { title: "TOTAL EVENTS", value: totalEvents.toString(), icon: Calendar, color: "bg-yellow-400" },
@@ -68,7 +68,6 @@ function AdminDashboardContent() {
   ];
 
   // Form state
-  const [activeMenuItem, setActiveMenuItem] = useState("Dashboard");
   const [eventName, setEventName] = useState("");
   const [eventDescription, setEventDescription] = useState("");
   const [eventVenue, setEventVenue] = useState("");
@@ -80,16 +79,6 @@ function AdminDashboardContent() {
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
 
-  const toggleVolunteer = (volunteerId: Id<"users">) => {
-    setSelectedVolunteers(prev => {
-      if (prev.includes(volunteerId)) {
-        return prev.filter(id => id !== volunteerId);
-      } else {
-        return [...prev, volunteerId];
-      }
-    });
-  };
-
   const handleCreateEvent = async () => {
     if (!eventName.trim() || !eventVenue.trim() || !eventDate || !eventTime) {
       toast.error("Please fill in all required fields");
@@ -98,7 +87,6 @@ function AdminDashboardContent() {
 
     setIsCreatingEvent(true);
     try {
-      // Pull admin email from admin session (set by AdminSignIn)
       let adminEmail: string | undefined = undefined;
       try {
         const adminSession = sessionStorage.getItem("adminUser");
@@ -106,9 +94,7 @@ function AdminDashboardContent() {
           const parsed = JSON.parse(adminSession);
           if (parsed?.email) adminEmail = parsed.email as string;
         }
-      } catch {
-        // ignore parse errors
-      }
+      } catch {}
 
       const result = await createEventAsAdmin({
         name: eventName.trim(),
@@ -118,13 +104,11 @@ function AdminDashboardContent() {
         eventTime: eventTime,
         maxParticipants: maxParticipants ? parseInt(maxParticipants) : undefined,
         volunteerIds: selectedVolunteers,
-        // Provide adminEmail so backend can validate admin access without relying only on Convex auth identity
         adminEmail,
       });
 
       if (result?.success) {
         toast.success(result.message);
-        // Reset form
         setEventName("");
         setEventDescription("");
         setEventVenue("");
@@ -144,37 +128,6 @@ function AdminDashboardContent() {
     }
   };
 
-  const handleMenuItemClick = (itemName: string) => {
-    setActiveMenuItem(itemName);
-    
-    // Navigate to the corresponding route
-    switch (itemName) {
-      case 'Dashboard':
-        navigate('/admin-dashboard');
-        break;
-      case 'Events':
-        navigate('/admin-events');
-        break;
-      case 'Check-In':
-        navigate('/admin-checkin');
-        break;
-      case 'Analytics':
-        navigate('/admin-event-analytics');
-        break;
-      case 'Tickets':
-        navigate('/admin-tickets');
-        break;
-      case 'Team':
-        navigate('/admin-team');
-        break;
-      case 'Settings':
-        navigate('/admin-settings');
-        break;
-      default:
-        break;
-    }
-  };
-
   const getCurrentDate = () => {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -184,7 +137,6 @@ function AdminDashboardContent() {
     }).toUpperCase();
   };
 
-  // Helper function to format date and time
   const formatEventDateTime = (timestamp: number) => {
     const date = new Date(timestamp);
     const eventDate = date.toLocaleDateString('en-US', { 
@@ -223,15 +175,7 @@ function AdminDashboardContent() {
     };
   }) || [];
 
-  const menuItems = [
-    { name: 'Dashboard', label: 'Dashboard', href: '/admin-dashboard', icon: Home, gradient: 'from-blue-500 to-cyan-500', iconColor: 'text-blue-500' },
-    { name: 'Events', label: 'Events', href: '/admin-events', icon: Calendar, gradient: 'from-green-500 to-emerald-500', iconColor: 'text-green-500' },
-    { name: 'Check-In', label: 'Check-In', href: '/admin-checkin', icon: ScanLine, gradient: 'from-teal-500 to-cyan-500', iconColor: 'text-teal-500' },
-    { name: 'Analytics', label: 'Analytics', href: '/admin-event-analytics', icon: BarChart3, gradient: 'from-indigo-500 to-violet-500', iconColor: 'text-indigo-500' },
-    { name: 'Tickets', label: 'Tickets', href: '/admin-tickets', icon: Ticket, gradient: 'from-amber-500 to-yellow-500', iconColor: 'text-amber-500' },
-    { name: 'Team', label: 'Team', href: '/admin-team', icon: Users, gradient: 'from-purple-500 to-violet-500', iconColor: 'text-purple-500' },
-    { name: 'Settings', label: 'Settings', href: '/admin-settings', icon: Settings, gradient: 'from-red-500 to-orange-500', iconColor: 'text-red-500' }
-  ];
+  const adminSession = getAdminSession();
 
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
@@ -239,38 +183,26 @@ function AdminDashboardContent() {
         <BackgroundPaths title="" />
       </div>
       <div className="relative z-10">
-        {/* Header Section */}
-        <header className="border-b-2 border-black dark:border-white/20 p-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
-            <div className="flex items-center gap-4 md:gap-6">
-              <div className="text-right hidden md:block">
-                <div className="text-sm font-bold">{getCurrentDate()}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
-              </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
-                AB
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Floating Navbar */}
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50">
-          <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
-        </div>
+        {/* Admin Navbar */}
+        <AdminNavBar items={ADMIN_NAV_ITEMS} />
 
         <div className="container mx-auto px-4 py-8 pt-20">
-          {/* Add Create New Admin Button - admin only */}
+          {/* Header with date */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
+            <div className="text-right hidden md:block">
+              <div className="text-sm font-bold">{getCurrentDate()}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">ADMIN PANEL</div>
+            </div>
+          </div>
+
+          {/* Create New Admin Button - admin only */}
           {(() => {
-            try {
-              const s = sessionStorage.getItem("adminUser");
-              if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (
-                <div className="mb-6 flex justify-end">
-                  <CreateAdminModal />
-                </div>
-              ); }
-            } catch {}
+            if (adminSession?.role === "admin") return (
+              <div className="mb-6 flex justify-end">
+                <CreateAdminModal />
+              </div>
+            );
             return (
               <div className="mb-6 flex justify-end">
                 <div className="px-3 py-1.5 text-xs font-black uppercase tracking-wider bg-amber-400 text-black border-2 border-black">
@@ -373,9 +305,9 @@ function AdminDashboardContent() {
                 )}
               </div>
 
-              {/* Volunteer Assignment Section */}
+              {/* List of Volunteers Section (no checkboxes) */}
               <div className="space-y-3 mt-6">
-                <Label className="text-sm font-bold">ASSIGN VOLUNTEERS</Label>
+                <Label className="text-sm font-bold">LIST OF VOLUNTEERS</Label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-black dark:border-white p-3 bg-muted/20">
                   {teamMembers === undefined ? (
                     <div className="text-center py-4">
@@ -391,19 +323,10 @@ function AdminDashboardContent() {
                     </div>
                   ) : (
                     teamMembers.map((volunteer: any) => (
-                      <div key={volunteer.userId} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                        <button
-                          type="button"
-                          onClick={() => toggleVolunteer(volunteer.userId)}
-                          className="flex-shrink-0"
-                          disabled={isSubmitting}
-                        >
-                          {selectedVolunteers.includes(volunteer.userId) ? (
-                            <CheckSquare className="h-5 w-5 text-primary" />
-                          ) : (
-                            <Square className="h-5 w-5 text-muted-foreground" />
-                          )}
-                        </button>
+                      <div key={volunteer.userId || volunteer._id} className="flex items-center space-x-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                        <div className="w-8 h-8 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs rounded-full flex-shrink-0">
+                          {(volunteer.name || "?").split(" ").map((w: string) => w.charAt(0)).join("").toUpperCase().slice(0, 2)}
+                        </div>
                         <div className="flex-grow">
                           <div className="font-medium text-sm">
                             {volunteer.name} ({volunteer.department || volunteer.role || 'N/A'})
@@ -420,7 +343,7 @@ function AdminDashboardContent() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {selectedVolunteers.length} volunteer{selectedVolunteers.length !== 1 ? 's' : ''} selected
+                  {teamMembers?.length || 0} volunteer{(teamMembers?.length || 0) !== 1 ? 's' : ''} total
                 </p>
               </div>
 
@@ -428,111 +351,58 @@ function AdminDashboardContent() {
               <div className="bg-card/80 backdrop-blur-sm border-4 border-black dark:border-white p-6">
                 <h2 className="text-xl font-bold mb-4 tracking-tighter">CALENDAR</h2>
                 <div className="grid grid-cols-7 gap-2 text-center font-bold text-sm mb-2">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                    <div key={day}>{day}</div>
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                    <div key={`${day}-${i}`}>{day}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7 gap-2 mt-2">
-                  {Array.from({ length: 35 }).map((_, i) => {
-                    const currentDate = new Date();
-                    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                  {Array.from({ length: 35 }, (_, i) => {
+                    const today = new Date();
+                    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
                     const startOffset = firstDay.getDay();
-                    const day = i - startOffset + 1;
-                    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-                    
-                    const dateStr = day > 0 && day <= daysInMonth 
-                      ? `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                    const dayNum = i - startOffset + 1;
+                    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                    const isValidDay = dayNum >= 1 && dayNum <= daysInMonth;
+                    const dateStr = isValidDay
+                      ? `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`
                       : '';
-                    
-                    const eventsOnDate = calendarEvents.filter((e: any) => e.date === dateStr);
-                    const hasEvent = eventsOnDate.length > 0;
-                    
-                    // Determine primary status color (if multiple events, prioritize ongoing > upcoming > completed)
+                    const dayEvents = calendarEvents.filter((e: any) => e.date === dateStr);
+                    const isToday = dayNum === today.getDate();
+
                     let bgColor = '';
-                    if (hasEvent) {
-                      if (eventsOnDate.some((e: any) => e.status === 'ongoing')) {
-                        bgColor = 'bg-blue-400/80';
-                      } else if (eventsOnDate.some((e: any) => e.status === 'upcoming')) {
-                        bgColor = 'bg-yellow-400/80';
-                      } else {
-                        bgColor = 'bg-green-400/80';
-                      }
+                    if (dayEvents.length > 0) {
+                      const statuses = dayEvents.map((e: any) => e.status);
+                      if (statuses.includes('ongoing')) bgColor = 'bg-blue-400 text-black';
+                      else if (statuses.includes('upcoming')) bgColor = 'bg-yellow-400 text-black';
+                      else if (statuses.includes('completed')) bgColor = 'bg-green-400 text-black';
                     }
-                    
+
                     return (
                       <div
                         key={i}
-                        className={`
-                          relative p-2 text-center text-sm border-2 border-black dark:border-white
-                          ${day > 0 && day <= daysInMonth ? 'cursor-pointer' : 'text-muted-foreground'}
-                          ${bgColor} ${hasEvent ? 'text-black font-bold' : ''}
-                          transition-all duration-200 hover:scale-110 hover:z-10 hover:border-4
-                          group
-                        `}
+                        className={`aspect-square flex items-center justify-center text-sm font-bold rounded ${
+                          isValidDay ? 'cursor-pointer hover:bg-muted' : 'opacity-0'
+                        } ${isToday ? 'ring-2 ring-primary' : ''} ${bgColor}`}
+                        title={dayEvents.map((e: any) => e.title).join(', ')}
                       >
-                        {day > 0 && day <= daysInMonth ? day : ''}
-                        
-                        {/* Hover popup for event details */}
-                        {hasEvent && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50 w-64">
-                            <div className="bg-card border-4 border-black dark:border-white p-4 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
-                              <div className="space-y-2">
-                                {eventsOnDate.map((event: any, idx: number) => {
-                                  const statusColor = 
-                                    event.status === 'ongoing' ? 'bg-blue-400' :
-                                    event.status === 'upcoming' ? 'bg-yellow-400' :
-                                    'bg-green-400';
-                                  
-                                  const eventTime = formatEventDateTime(event.startDate);
-                                  
-                                  return (
-                                    <div key={idx} className={`${statusColor} text-black p-3 border-2 border-black`}>
-                                      <div className="font-bold text-xs uppercase mb-1">
-                                        {event.status}
-                                      </div>
-                                      <div className="font-bold text-sm mb-1">
-                                        {event.title}
-                                      </div>
-                                      <div className="text-xs space-y-1">
-                                        <div className="flex items-center gap-1">
-                                          <Clock className="h-3 w-3" />
-                                          {eventTime.eventTime}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <MapPin className="h-3 w-3" />
-                                          {event.venue}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Multiple events indicator */}
-                        {eventsOnDate.length > 1 && (
-                          <div className="absolute top-0 right-0 w-2 h-2 bg-black dark:bg-white rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
-                        )}
+                        {isValidDay ? dayNum : ''}
                       </div>
                     );
                   })}
                 </div>
-                
                 {/* Legend */}
-                <div className="mt-4 flex flex-wrap gap-3 text-xs font-bold">
+                <div className="flex flex-wrap gap-3 mt-4 text-xs font-bold">
                   <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-yellow-400 border-2 border-black dark:border-white"></div>
-                    <span>UPCOMING</span>
+                    <div className="w-3 h-3 bg-yellow-400 rounded"></div>
+                    <span>Upcoming</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-blue-400 border-2 border-black dark:border-white"></div>
-                    <span>ONGOING</span>
+                    <div className="w-3 h-3 bg-blue-400 rounded"></div>
+                    <span>Ongoing</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 bg-green-400 border-2 border-black dark:border-white"></div>
-                    <span>COMPLETED</span>
+                    <div className="w-3 h-3 bg-green-400 rounded"></div>
+                    <span>Completed</span>
                   </div>
                 </div>
               </div>

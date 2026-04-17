@@ -8,6 +8,7 @@ import { CertificatesWidget } from "@/components/dashboard/CertificatesWidget";
 import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
 import { ProfileWidget } from "@/components/dashboard/ProfileWidget";
 import { EventDiscoveryGrid } from "@/components/dashboard/EventDiscoveryGrid";
+import { BroadcastWidget } from "@/components/dashboard/BroadcastWidget";
 import { CreateTicketModal } from "@/components/dashboard/CreateTicketModal";
 import { TicketsListPanel } from "@/components/dashboard/TicketsListPanel";
 import { useState } from "react";
@@ -106,9 +107,18 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* EVENT DISCOVERY Section */}
-        <div className="mb-6">
-          <EventDiscoveryGrid />
+        {/* Broadcasts + EVENT DISCOVERY Section */}
+        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-4 mb-6">
+          {/* Broadcasts */}
+          <div className="border-2 border-black dark:border-white bg-[#fff8e8] dark:bg-amber-900/20 p-5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-3">LATEST BROADCASTS</p>
+            <BroadcastWidget />
+          </div>
+
+          {/* Event Discovery */}
+          <div>
+            <EventDiscoveryGrid />
+          </div>
         </div>
       </div>
     </Protected>

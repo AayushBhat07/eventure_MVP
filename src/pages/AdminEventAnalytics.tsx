@@ -22,7 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MenuBar } from "@/components/ui/glow-menu";
+import { AdminNavBar } from "@/components/admin/admin-navbar";
+import { ADMIN_NAV_ITEMS } from "@/components/admin/admin-nav-items";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { useNavigate } from "react-router";
 import { getAdminSession, isAdminRole } from "@/hooks/use-admin-session";
@@ -47,16 +48,6 @@ import {
   Award,
   Image as ImageIcon,
 } from "lucide-react";
-
-const menuItems = [
-  { name: "Dashboard", label: "Dashboard", href: "/admin-dashboard", icon: Home, gradient: "from-blue-500 to-cyan-500", iconColor: "text-blue-500" },
-  { name: "Events", label: "Events", href: "/admin-events", icon: Calendar, gradient: "from-green-500 to-emerald-500", iconColor: "text-green-500" },
-  { name: "Check-In", label: "Check-In", href: "/admin-checkin", icon: ScanLine, gradient: "from-teal-500 to-cyan-500", iconColor: "text-teal-500" },
-  { name: "Analytics", label: "Analytics", href: "/admin-event-analytics", icon: BarChart3, gradient: "from-indigo-500 to-violet-500", iconColor: "text-indigo-500" },
-  { name: "Tickets", label: "Tickets", href: "/admin-tickets", icon: Ticket, gradient: "from-amber-500 to-yellow-500", iconColor: "text-amber-500" },
-  { name: "Team", label: "Team", href: "/admin-team", icon: Users, gradient: "from-purple-500 to-violet-500", iconColor: "text-purple-500" },
-  { name: "Settings", label: "Settings", href: "/admin-settings", icon: Settings, gradient: "from-red-500 to-orange-500", iconColor: "text-red-500" },
-];
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -150,7 +141,6 @@ function WinnerCard({ winner, isAdmin, onDelete }: { winner: { _id: string; rank
 
 export default function AdminEventAnalytics() {
   const navigate = useNavigate();
-  const [activeMenuItem, setActiveMenuItem] = useState("Analytics");
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [showAddWinner, setShowAddWinner] = useState(false);
   const [winnerForm, setWinnerForm] = useState({ rank: "1st", winnerName: "", photoUrl: "", description: "" });
@@ -172,7 +162,6 @@ export default function AdminEventAnalytics() {
   const sendCheckInEmails = useMutation(api.events.sendCheckInEmailsForEvent);
 
   const handleMenuItemClick = (itemName: string) => {
-    setActiveMenuItem(itemName);
     const routes: Record<string, string> = {
       Dashboard: "/admin-dashboard",
       Events: "/admin-events",
@@ -255,11 +244,9 @@ export default function AdminEventAnalytics() {
         <BackgroundPaths title="" />
       </div>
 
-      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-        <MenuBar items={menuItems} activeItem={activeMenuItem} onItemClick={handleMenuItemClick} />
-      </div>
+      <AdminNavBar items={ADMIN_NAV_ITEMS} />
 
-      <div className="relative z-10 pt-24 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
+      <div className="relative z-10 pt-20 pb-12 px-4 md:px-8 max-w-6xl mx-auto">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
