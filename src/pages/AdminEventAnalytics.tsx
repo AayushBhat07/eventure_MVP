@@ -51,14 +51,14 @@ import {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    active: "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30",
-    completed: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
-    cancelled: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+    active: "bg-green-400 text-black border-black",
+    completed: "bg-blue-400 text-black border-black",
+    cancelled: "bg-red-400 text-black border-black",
   };
   return (
-    <Badge variant="outline" className={`text-xs font-bold uppercase ${colors[status] || ""}`}>
+    <span className={`text-[10px] font-black uppercase px-2 py-1 border-2 ${colors[status] || "bg-gray-200 text-black border-black"}`}>
       {status}
-    </Badge>
+    </span>
   );
 }
 
@@ -69,30 +69,26 @@ function ParticipantRow({ participant, index }: { participant: { user: { name?: 
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02 }}
-      className="flex items-center justify-between py-2.5 px-3 border-b border-foreground/5 last:border-b-0 hover:bg-muted/20 transition-colors"
+      className={`flex items-center justify-between py-3 px-4 border-b-2 border-black dark:border-white last:border-b-0 ${checkedIn ? "bg-green-50 dark:bg-green-900/20" : ""}`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <div className={`h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 ${checkedIn ? "bg-green-500/15" : "bg-muted/40"}`}>
-          {checkedIn ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-          ) : (
-            <XCircle className="h-4 w-4 text-muted-foreground/50" />
-          )}
+        <div className={`h-8 w-8 border-2 border-black dark:border-white flex items-center justify-center flex-shrink-0 font-black text-xs ${checkedIn ? "bg-green-400 text-black" : "bg-gray-200 dark:bg-gray-700 text-black dark:text-white"}`}>
+          {checkedIn ? "✓" : "✗"}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{participant.user?.name || "Unknown"}</p>
-          <p className="text-xs text-muted-foreground truncate">{participant.user?.email || "—"}</p>
+          <p className="text-sm font-black uppercase truncate">{participant.user?.name || "Unknown"}</p>
+          <p className="text-xs text-muted-foreground truncate font-mono">{participant.user?.email || "—"}</p>
         </div>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
         {participant.checkInCode && (
-          <Badge variant="outline" className="text-[10px] font-mono hidden sm:inline-flex">
+          <span className="text-[10px] font-mono font-bold border-2 border-black dark:border-white px-2 py-0.5 hidden sm:inline-block">
             {participant.checkInCode}
-          </Badge>
+          </span>
         )}
-        <Badge variant={checkedIn ? "default" : "secondary"} className="text-[10px] font-bold">
+        <span className={`text-[10px] font-black uppercase px-2 py-1 border-2 border-black dark:border-white ${checkedIn ? "bg-green-400 text-black" : "bg-gray-200 dark:bg-gray-700 text-black dark:text-white"}`}>
           {checkedIn ? "CHECKED IN" : "NOT YET"}
-        </Badge>
+        </span>
       </div>
     </motion.div>
   );
@@ -100,39 +96,42 @@ function ParticipantRow({ participant, index }: { participant: { user: { name?: 
 
 function WinnerCard({ winner, isAdmin, onDelete }: { winner: { _id: string; rank: string; winnerName: string; photoUrl?: string; description?: string }; isAdmin: boolean; onDelete: () => void }) {
   const rankColors: Record<string, string> = {
-    "1st": "from-yellow-400 to-amber-500",
-    "2nd": "from-gray-300 to-gray-400",
-    "3rd": "from-amber-600 to-orange-700",
+    "1st": "bg-yellow-400",
+    "2nd": "bg-gray-300",
+    "3rd": "bg-amber-600",
   };
-  const gradient = rankColors[winner.rank] || "from-indigo-400 to-purple-500";
+  const rankBg = rankColors[winner.rank] || "bg-blue-400";
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="border-2 border-foreground/10 rounded-xl overflow-hidden bg-background"
+      className="border-4 border-black dark:border-white shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff] overflow-hidden bg-white dark:bg-neutral-900"
     >
       {winner.photoUrl ? (
-        <div className="aspect-square bg-muted/20 overflow-hidden">
+        <div className="aspect-square overflow-hidden border-b-4 border-black dark:border-white">
           <img src={winner.photoUrl} alt={winner.winnerName} className="w-full h-full object-cover" />
         </div>
       ) : (
-        <div className={`aspect-square bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-          <Trophy className="h-12 w-12 text-white/80" />
+        <div className={`aspect-square ${rankBg} flex items-center justify-center border-b-4 border-black dark:border-white`}>
+          <Trophy className="h-12 w-12 text-black" />
         </div>
       )}
       <div className="p-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Badge className="text-xs font-black">{winner.rank}</Badge>
+        <div className={`inline-block px-2 py-0.5 text-[10px] font-black uppercase border-2 border-black dark:border-white mb-2 ${rankBg} text-black`}>
+          {winner.rank}
         </div>
-        <p className="text-sm font-bold truncate">{winner.winnerName}</p>
+        <p className="text-sm font-black uppercase truncate">{winner.winnerName}</p>
         {winner.description && (
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{winner.description}</p>
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 font-mono">{winner.description}</p>
         )}
         {isAdmin && (
-          <Button variant="ghost" size="sm" className="mt-2 text-xs text-destructive hover:text-destructive" onClick={onDelete}>
-            <Trash2 className="h-3 w-3 mr-1" /> Remove
-          </Button>
+          <button
+            onClick={onDelete}
+            className="mt-2 text-[10px] font-black uppercase text-red-600 border-2 border-red-600 px-2 py-1 hover:bg-red-600 hover:text-white transition-colors"
+          >
+            REMOVE
+          </button>
         )}
       </div>
     </motion.div>
@@ -250,24 +249,24 @@ export default function AdminEventAnalytics() {
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-6"
+          className="text-4xl md:text-5xl font-black uppercase tracking-tight mb-8"
         >
-          Event Analytics
+          EVENT ANALYTICS
         </motion.h1>
 
         {/* Event Selector */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-8">
           <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-            <SelectTrigger className="w-full md:w-96 border-2 border-foreground/20 bg-background text-base font-semibold">
-              <SelectValue placeholder="Select an event..." />
+            <SelectTrigger className="w-full md:w-96 border-4 border-black dark:border-white bg-background text-base font-black rounded-none shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]">
+              <SelectValue placeholder="SELECT AN EVENT..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border-4 border-black dark:border-white rounded-none">
               {(events || []).map((ev: { _id: string; name: string; status: string }) => (
-                <SelectItem key={ev._id} value={ev._id}>
+                <SelectItem key={ev._id} value={ev._id} className="font-bold uppercase">
                   <span className="flex items-center gap-2">
                     {ev.name}
-                    <span className={`text-[10px] font-bold uppercase ${ev.status === "active" ? "text-green-600" : ev.status === "completed" ? "text-blue-600" : "text-red-600"}`}>
-                      ({ev.status})
+                    <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 border border-black ${ev.status === "active" ? "bg-green-400 text-black" : ev.status === "completed" ? "bg-blue-400 text-black" : "bg-red-400 text-black"}`}>
+                      {ev.status}
                     </span>
                   </span>
                 </SelectItem>
@@ -282,116 +281,92 @@ export default function AdminEventAnalytics() {
         {selectedEventId && event && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="space-y-8">
             {/* Event Details Card */}
-            <Card className="border-2 border-foreground/10">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-black uppercase tracking-tight">{event.name}</h2>
-                    <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{formatDate(event.startDate)}</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{formatTime(event.startDate)}</span>
-                      <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{event.venue}</span>
+            <div className="bg-card/80 backdrop-blur-sm border-4 border-black dark:border-white p-6 shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <h2 className="text-3xl font-black uppercase tracking-tight">{event.name}</h2>
+                  <div className="flex flex-wrap items-center gap-4 mt-3">
+                    <div className="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1.5 bg-yellow-400 text-black">
+                      <Calendar className="h-4 w-4" />
+                      <span className="text-xs font-black uppercase">{formatDate(event.startDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1.5 bg-blue-400 text-black">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-xs font-black uppercase">{formatTime(event.startDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 border-2 border-black dark:border-white px-3 py-1.5 bg-white dark:bg-neutral-800 text-black dark:text-white">
+                      <MapPin className="h-4 w-4" />
+                      <span className="text-xs font-black uppercase">{event.venue}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={event.status} />
-                    {isAdmin && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs font-bold uppercase"
-                        onClick={handleToggleStatus}
-                      >
-                        Mark as {event.status === "active" ? "Completed" : "Active"}
-                      </Button>
-                    )}
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <StatusBadge status={event.status} />
+                  {isAdmin && (
+                    <button
+                      onClick={handleToggleStatus}
+                      className="text-xs font-black uppercase border-4 border-black dark:border-white px-4 py-2 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#555] transition-all"
+                    >
+                      MARK AS {event.status === "active" ? "COMPLETED" : "ACTIVE"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="border-2 border-foreground/10">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-500/10">
-                    <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              {[
+                { title: "REGISTERED", value: stats?.totalRegistered ?? "—", icon: Users, color: "bg-blue-400" },
+                { title: "ATTENDED", value: stats?.totalAttended ?? "—", icon: UserCheck, color: "bg-green-400" },
+                { title: "ATTEND RATE", value: stats && stats.totalRegistered > 0 ? `${Math.round((stats.totalAttended / stats.totalRegistered) * 100)}%` : "—", icon: BarChart3, color: "bg-yellow-400" },
+                { title: "WINNERS", value: winners?.length ?? "—", icon: Trophy, color: "bg-red-400" },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.title}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.05 }}
+                  className={`${stat.color} text-black p-6 border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] hover:shadow-[12px_12px_0px_#000] dark:hover:shadow-[12px_12px_0px_#fff] hover:-translate-x-1 hover:-translate-y-1 transition-all duration-200`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <stat.icon className="h-10 w-10 mb-3 stroke-[3px]" />
+                    <p className="text-[10px] font-black tracking-tighter uppercase mb-2 leading-tight">{stat.title}</p>
+                    <p className="text-4xl font-black tracking-tighter">{stat.value}</p>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Registered</p>
-                    <p className="text-2xl font-black">{stats?.totalRegistered ?? "—"}</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-foreground/10">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-500/10">
-                    <UserCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Attended</p>
-                    <p className="text-2xl font-black">{stats?.totalAttended ?? "—"}</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-foreground/10">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-amber-500/10">
-                    <BarChart3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Rate</p>
-                    <p className="text-2xl font-black">
-                      {stats && stats.totalRegistered > 0
-                        ? `${Math.round((stats.totalAttended / stats.totalRegistered) * 100)}%`
-                        : "—"}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-2 border-foreground/10">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-purple-500/10">
-                    <Trophy className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase">Winners</p>
-                    <p className="text-2xl font-black">{winners?.length ?? "—"}</p>
-                  </div>
-                </CardContent>
-              </Card>
+                </motion.div>
+              ))}
             </div>
 
             {/* Actions Row (Admin only) */}
             {isAdmin && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap gap-3">
-                <Button
+                <button
                   onClick={handleSendCheckInEmails}
                   disabled={sendingEmails}
-                  className="gap-2 font-bold uppercase text-xs"
+                  className="flex items-center gap-2 border-4 border-black dark:border-white px-6 py-3 bg-black dark:bg-white text-white dark:text-black font-black uppercase text-xs shadow-[4px_4px_0px_#555] dark:shadow-[4px_4px_0px_#aaa] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#555] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {sendingEmails ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                  {sendingEmails ? "Sending..." : "Send Check-In Emails"}
-                </Button>
-                <Button
-                  variant="outline"
+                  {sendingEmails ? "SENDING..." : "SEND CHECK-IN EMAILS"}
+                </button>
+                <button
                   onClick={() => setShowAddWinner(true)}
-                  className="gap-2 font-bold uppercase text-xs"
+                  className="flex items-center gap-2 border-4 border-black dark:border-white px-6 py-3 bg-yellow-400 text-black font-black uppercase text-xs shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all"
                 >
-                  <Award className="h-4 w-4" /> Add Winner
-                </Button>
+                  <Award className="h-4 w-4" /> ADD WINNER
+                </button>
               </motion.div>
             )}
 
             {/* Participants List */}
-            <Card className="border-2 border-foreground/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-black uppercase flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Registered Participants ({participants?.length ?? 0})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] bg-card/80 backdrop-blur-sm">
+              <div className="border-b-4 border-black dark:border-white p-4 bg-black dark:bg-white">
+                <h3 className="text-lg font-black uppercase text-white dark:text-black flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  REGISTERED PARTICIPANTS ({participants?.length ?? 0})
+                </h3>
+              </div>
+              <div>
                 {participants && participants.length > 0 ? (
                   <div className="max-h-[500px] overflow-y-auto">
                     {participants.map((p: any, idx: number) => (
@@ -399,23 +374,23 @@ export default function AdminEventAnalytics() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-10 text-muted-foreground">
-                    <Users className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">No participants registered</p>
+                  <div className="text-center py-12">
+                    <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm font-black uppercase text-muted-foreground">NO PARTICIPANTS REGISTERED</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Winners Section */}
-            <Card className="border-2 border-foreground/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-black uppercase flex items-center gap-2">
-                  <Trophy className="h-4 w-4" />
-                  Winners
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] bg-card/80 backdrop-blur-sm">
+              <div className="border-b-4 border-black dark:border-white p-4 bg-yellow-400">
+                <h3 className="text-lg font-black uppercase text-black flex items-center gap-2">
+                  <Trophy className="h-5 w-5" />
+                  WINNERS ({winners?.length ?? 0})
+                </h3>
+              </div>
+              <div className="p-6">
                 {winners && winners.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {winners.map((w: any) => (
@@ -428,44 +403,49 @@ export default function AdminEventAnalytics() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-10 text-muted-foreground">
-                    <Trophy className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">No winners added yet</p>
+                  <div className="text-center py-10">
+                    <Trophy className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm font-black uppercase text-muted-foreground">NO WINNERS ADDED YET</p>
                     {isAdmin && (
-                      <Button variant="outline" size="sm" className="mt-3 text-xs font-bold" onClick={() => setShowAddWinner(true)}>
-                        <Plus className="h-3 w-3 mr-1" /> Add Winner
-                      </Button>
+                      <button
+                        onClick={() => setShowAddWinner(true)}
+                        className="mt-4 border-4 border-black dark:border-white px-6 py-2 bg-yellow-400 text-black font-black uppercase text-xs shadow-[4px_4px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] transition-all"
+                      >
+                        + ADD WINNER
+                      </button>
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         )}
 
         {!selectedEventId && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 text-muted-foreground">
-            <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="text-lg font-semibold">Select an event to view analytics</p>
-            <p className="text-sm mt-1">Choose an event from the dropdown above</p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+            <div className="border-4 border-black dark:border-white p-12 inline-block shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
+              <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-30" />
+              <p className="text-xl font-black uppercase">SELECT AN EVENT</p>
+              <p className="text-sm font-bold uppercase text-muted-foreground mt-2">CHOOSE AN EVENT FROM THE DROPDOWN ABOVE</p>
+            </div>
           </motion.div>
         )}
       </div>
 
       {/* Add Winner Dialog */}
       <Dialog open={showAddWinner} onOpenChange={setShowAddWinner}>
-        <DialogContent className="max-w-md border-2 border-foreground/20">
+        <DialogContent className="max-w-md border-4 border-black dark:border-white rounded-none shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase">Add Winner</DialogTitle>
+            <DialogTitle className="text-2xl font-black uppercase">ADD WINNER</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-xs font-bold uppercase">Rank</Label>
+              <Label className="text-xs font-black uppercase">RANK</Label>
               <Select value={winnerForm.rank} onValueChange={(val: string) => setWinnerForm((p) => ({ ...p, rank: val }))}>
-                <SelectTrigger className="border-2 border-foreground/20">
+                <SelectTrigger className="border-4 border-black dark:border-white rounded-none mt-1">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-4 border-black dark:border-white rounded-none">
                   <SelectItem value="1st">🥇 1st Place</SelectItem>
                   <SelectItem value="2nd">🥈 2nd Place</SelectItem>
                   <SelectItem value="3rd">🥉 3rd Place</SelectItem>
@@ -474,42 +454,49 @@ export default function AdminEventAnalytics() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs font-bold uppercase">Winner Name</Label>
+              <Label className="text-xs font-black uppercase">WINNER NAME</Label>
               <Input
                 value={winnerForm.winnerName}
                 onChange={(e) => setWinnerForm((p) => ({ ...p, winnerName: e.target.value }))}
                 placeholder="Enter winner name"
-                className="border-2 border-foreground/20"
+                className="border-4 border-black dark:border-white rounded-none mt-1 font-bold"
               />
             </div>
             <div>
-              <Label className="text-xs font-bold uppercase">Photo URL (optional)</Label>
-              <div className="flex items-center gap-2">
+              <Label className="text-xs font-black uppercase">PHOTO URL (OPTIONAL)</Label>
+              <div className="flex items-center gap-2 mt-1">
                 <ImageIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <Input
                   value={winnerForm.photoUrl}
                   onChange={(e) => setWinnerForm((p) => ({ ...p, photoUrl: e.target.value }))}
                   placeholder="https://example.com/photo.jpg"
-                  className="border-2 border-foreground/20"
+                  className="border-4 border-black dark:border-white rounded-none font-mono"
                 />
               </div>
             </div>
             <div>
-              <Label className="text-xs font-bold uppercase">Description (optional)</Label>
+              <Label className="text-xs font-black uppercase">DESCRIPTION (OPTIONAL)</Label>
               <Input
                 value={winnerForm.description}
                 onChange={(e) => setWinnerForm((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Brief description or achievement"
-                className="border-2 border-foreground/20"
+                className="border-4 border-black dark:border-white rounded-none mt-1 font-bold"
               />
             </div>
             <div className="flex gap-3 pt-2">
-              <Button onClick={handleAddWinner} disabled={!winnerForm.winnerName.trim()} className="flex-1 font-bold uppercase">
-                Add Winner
-              </Button>
-              <Button variant="outline" onClick={() => setShowAddWinner(false)} className="flex-1 font-bold uppercase">
-                Cancel
-              </Button>
+              <button
+                onClick={handleAddWinner}
+                disabled={!winnerForm.winnerName.trim()}
+                className="flex-1 border-4 border-black dark:border-white py-3 bg-black dark:bg-white text-white dark:text-black font-black uppercase text-sm shadow-[4px_4px_0px_#555] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#555] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                ADD WINNER
+              </button>
+              <button
+                onClick={() => setShowAddWinner(false)}
+                className="flex-1 border-4 border-black dark:border-white py-3 bg-white dark:bg-neutral-900 text-black dark:text-white font-black uppercase text-sm hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                CANCEL
+              </button>
             </div>
           </div>
         </DialogContent>
