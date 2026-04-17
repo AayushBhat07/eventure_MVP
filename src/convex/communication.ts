@@ -2,6 +2,46 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
 import { internal } from "./_generated/api";
+import { MutationCtx } from "./_generated/server";
+
+// Helper: extract @mentions from content and create notifications
+async function notifyMentionedUsers(
+  ctx: MutationCtx,
+  content: string,
+  authorName: string,
+  linkId: string,
+  linkLabel: string
+) {
+  const mentionPattern = /@(\w+)/g;
+  const mentions = new Set<string>();
+  let match;
+  while ((match = mentionPattern.exec(content)) !== null) {
+    mentions.add(match[1]);
+  }
+  if (mentions.size === 0) return;
+
+  // Look up each mentioned name in the users table
+  for (const mentionedName of mentions) {
+    try {
+      // Search users by name (case-insensitive partial match via scan — limited to 50)
+      const users = await ctx.db.query("users").take(200);
+      const matchedUser = users.find(
+        (u) => u.name && u.name.toLowerCase().startsWith(mentionedName.toLowerCase())
+      );
+      if (matchedUser) {
+        await ctx.db.insert("notifications", {
+          recipientId: matchedUser._id,
+          type: "mention",
+          content: `${authorName} mentioned you in ${linkLabel}`,
+          isRead: false,
+          linkId,
+        });
+      }
+    } catch {
+      // Skip silently if user not found or any error
+    }
+  }
+}
 
 export const listMessages = query({
   args: {
@@ -110,6 +150,7 @@ export const postMessage = mutation({
   },
   handler: async (ctx, args) => {
     const channel = args.channel || "general";
+    let authorName = "Admin";
 
     // 1. Try Convex auth user first
     const user = await getCurrentUser(ctx);
@@ -119,6 +160,8 @@ export const postMessage = mutation({
         content: args.content,
         channel,
       });
+      authorName = user.name || user.email || "Admin";
+      await notifyMentionedUsers(ctx, args.content, authorName, channel, `#${channel}`);
       return;
     }
 
@@ -144,6 +187,11 @@ export const postMessage = mutation({
         }
       }
 
+      // Resolve author name
+      if (admin) {
+        authorName = admin.name || admin.email;
+      }
+
       // Try to find a matching users record for authorId
       const matchingUser = await ctx.db
         .query("users")
@@ -156,6 +204,7 @@ export const postMessage = mutation({
           content: args.content,
           channel,
         });
+        authorName = matchingUser.name || authorName;
       } else {
         const authorId = admin ? admin._id : (await ctx.db.query("teamMembers").withIndex("by_email", (q) => q.eq("email", normalizedEmail)).first())?._id;
         if (!authorId) {
@@ -167,6 +216,8 @@ export const postMessage = mutation({
           channel,
         });
       }
+
+      await notifyMentionedUsers(ctx, args.content, authorName, channel, `#${channel}`);
       return;
     }
 
@@ -263,27 +314,19 @@ export const postEventChannelMessage = mutation({
       throw new Error("Event not found");
     }
 
+    let authorName = "Unknown";
+
     // 1. Try Convex auth user first
     const user = await getCurrentUser(ctx);
     if (user) {
-      // Admins can always post
-      if (user.role === "admin") {
-        await ctx.db.insert("event_channel_messages", {
-          eventId: args.eventId,
-          authorId: user._id,
-          authorName: user.name || user.email || "Admin",
-          content: args.content,
-        });
-        return { success: true };
-      }
-      // Regular users can post if they are registered for the event
-      // (For now, allow all authenticated users to post in event channels)
+      authorName = user.name || user.email || (user.role === "admin" ? "Admin" : "User");
       await ctx.db.insert("event_channel_messages", {
         eventId: args.eventId,
         authorId: user._id,
-        authorName: user.name || user.email || "User",
+        authorName,
         content: args.content,
       });
+      await notifyMentionedUsers(ctx, args.content, authorName, args.eventId, event.name);
       return { success: true };
     }
 
@@ -297,12 +340,14 @@ export const postEventChannelMessage = mutation({
         .first();
 
       if (admin) {
+        authorName = admin.name || admin.email;
         await ctx.db.insert("event_channel_messages", {
           eventId: args.eventId,
           authorId: admin._id as string,
-          authorName: admin.name || admin.email,
+          authorName,
           content: args.content,
         });
+        await notifyMentionedUsers(ctx, args.content, authorName, args.eventId, event.name);
         return { success: true };
       }
 
@@ -312,12 +357,14 @@ export const postEventChannelMessage = mutation({
         .first();
 
       if (teamMember) {
+        authorName = teamMember.name || teamMember.email;
         await ctx.db.insert("event_channel_messages", {
           eventId: args.eventId,
           authorId: teamMember._id as string,
-          authorName: teamMember.name || teamMember.email,
+          authorName,
           content: args.content,
         });
+        await notifyMentionedUsers(ctx, args.content, authorName, args.eventId, event.name);
         return { success: true };
       }
 
