@@ -379,10 +379,20 @@ function AdminEventsContent() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {allEvents.map((event: any) => (
-                <Card key={event._id} className="border-4 border-black dark:border-white bg-card/80 backdrop-blur-sm">
+                <Card key={event._id} className="border-4 border-black dark:border-white bg-card/80 backdrop-blur-sm overflow-hidden">
+                  {event.imageUrl && (
+                    <div className="w-full h-40 overflow-hidden border-b-4 border-black dark:border-white">
+                      <img
+                        src={event.imageUrl}
+                        alt={event.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                  )}
                   <CardContent className="p-6">
                     <h3 className="text-xl font-bold mb-2 tracking-tighter uppercase">{event.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{event.description}</p>
                     <div className="space-y-2 text-sm">
                       <p><strong>Date:</strong> {new Date(event.startDate).toLocaleDateString()}</p>
                       <p><strong>Venue:</strong> {event.venue}</p>

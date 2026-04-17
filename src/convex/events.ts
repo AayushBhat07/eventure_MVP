@@ -149,6 +149,7 @@ export const createEventAsAdmin = mutation({
     maxParticipants: v.optional(v.number()),
     volunteerIds: v.optional(v.array(v.id("teamMembers"))),
     eventType: v.optional(v.union(v.literal("individual"), v.literal("team"))),
+    imageUrl: v.optional(v.string()),
     // New optional admin email for validation from admin session
     adminEmail: v.optional(v.string()),
   },
@@ -217,6 +218,7 @@ export const createEventAsAdmin = mutation({
       status: "active",
       volunteerIds: args.volunteerIds ?? [],
       eventType: args.eventType ?? "individual",
+      imageUrl: args.imageUrl,
     });
 
     return {

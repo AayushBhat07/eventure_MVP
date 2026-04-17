@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Users, CheckSquare, Square, Sparkles, Loader2 } from "lucide-react";
+import { X, Users, CheckSquare, Square, Sparkles, Loader2, Image as ImageIcon } from "lucide-react";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -15,7 +15,7 @@ interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenChange: (open: boolean) => void;
-  allUsers: any[]; // Keep for backward compatibility but won't use
+  allUsers: any[];
 }
 
 export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventModalProps) {
@@ -28,15 +28,18 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     maxParticipants: "",
     volunteerIds: [] as Id<"teamMembers">[],
     eventType: "individual" as "individual" | "team",
+    imageUrl: "",
   });
 
   const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"teamMembers">>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const createEvent = useMutation(api.events.createEventAsAdmin);
   const teamMembers = useQuery(api.team.getAllTeamMembers);
   const enhanceDescription = useAction(api.ai.enhanceEventDescription);
+  const generateImage = useAction(api.ai.generateEventImageUrl);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -46,7 +49,6 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
   };
 
   const handleClose = () => {
-    // Reset form
     setFormData({
       name: "",
       description: "",
@@ -56,6 +58,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
       maxParticipants: "",
       volunteerIds: [],
       eventType: "individual",
+      imageUrl: "",
     });
     setSelectedVolunteers(new Set());
     onClose();
@@ -78,16 +81,13 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     setIsSubmitting(true);
 
     try {
-      // Validation
       if (!formData.name.trim() || !formData.venue.trim() || !formData.eventDate || !formData.eventTime) {
         toast.error("Please fill in all required fields");
         return;
       }
 
-      // Convert selected volunteers to array
       const volunteerIds = Array.from(selectedVolunteers);
 
-      // Pull admin email from admin session (set by AdminSignIn)
       let adminEmail: string | undefined = undefined;
       try {
         const adminSession = sessionStorage.getItem("adminUser");
@@ -95,9 +95,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
           const parsed = JSON.parse(adminSession);
           if (parsed?.email) adminEmail = parsed.email as string;
         }
-      } catch {
-        // ignore parse errors, adminEmail stays undefined
-      }
+      } catch {}
 
       const result = await createEvent({
         name: formData.name.trim(),
@@ -108,7 +106,7 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
         maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : undefined,
         volunteerIds,
         eventType: formData.eventType,
-        // Provide adminEmail so backend can validate admin access without relying only on Convex auth identity
+        imageUrl: formData.imageUrl.trim() || undefined,
         adminEmail,
       });
 
@@ -147,13 +145,33 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     }
   };
 
+  const handleGenerateImage = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Please enter an event name first");
+      return;
+    }
+    setIsGeneratingImage(true);
+    try {
+      const result = await generateImage({ eventName: formData.name });
+      if (result.success && result.imageUrl) {
+        setFormData(prev => ({ ...prev, imageUrl: result.imageUrl }));
+        toast.success("Image generated!");
+      } else {
+        toast.error(result.error || "Failed to generate image");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Image generation failed");
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   const formatVolunteerDisplay = (member: any) => {
     const name = member.name || 'Unknown Name';
     const parts = [member.branch, member.rollNo].filter(Boolean);
     return parts.length > 0 ? `${name} (${parts.join(' - ')})` : name;
   };
 
-  // Memoize available volunteers from team members
   const availableVolunteers = React.useMemo(() => {
     return teamMembers || [];
   }, [teamMembers]);
@@ -213,6 +231,44 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
               onChange={(e) => handleInputChange('description', e.target.value)}
               className="border-2 border-black dark:border-white min-h-[100px]"
             />
+          </div>
+
+          {/* Image URL Field */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-bold">EVENT IMAGE (OPTIONAL)</Label>
+              <button
+                type="button"
+                onClick={handleGenerateImage}
+                disabled={isGeneratingImage || !formData.name.trim()}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider border-2 border-black dark:border-white bg-[#6D28D9] text-white hover:bg-[#5B21B6] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-[2px_2px_0px_#000] dark:shadow-[2px_2px_0px_#fff] hover:shadow-[1px_1px_0px_#000] dark:hover:shadow-[1px_1px_0px_#fff] hover:translate-x-[1px] hover:translate-y-[1px]"
+              >
+                {isGeneratingImage ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ImageIcon className="h-3 w-3" />
+                )}
+                {isGeneratingImage ? "Generating..." : "Generate Image"}
+              </button>
+            </div>
+            <Input
+              placeholder="https://example.com/image.jpg"
+              value={formData.imageUrl}
+              onChange={(e) => handleInputChange('imageUrl', e.target.value)}
+              className="border-2 border-black dark:border-white"
+            />
+            {formData.imageUrl && (
+              <div className="mt-2 border-2 border-black dark:border-white rounded-lg overflow-hidden">
+                <img
+                  src={formData.imageUrl}
+                  alt="Event preview"
+                  className="w-full h-40 object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Event Type Selector */}

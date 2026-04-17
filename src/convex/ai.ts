@@ -39,3 +39,47 @@ export const enhanceEventDescription = action({
     }
   },
 });
+
+export const generateEventImageUrl = action({
+  args: {
+    eventName: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    try {
+      const result = await vly.ai.completion({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a helper that generates a single short search keyword (1-2 words) for finding a relevant stock photo for an event. Only respond with the keyword, nothing else. Examples: "hackathon" → "coding", "sports meet" → "athletics", "cultural fest" → "festival", "workshop" → "workshop classroom", "seminar" → "conference".`,
+          },
+          {
+            role: "user",
+            content: args.eventName,
+          },
+        ],
+        maxTokens: 20,
+        temperature: 0.5,
+      });
+
+      let keyword = "event";
+      if (result.success && result.data) {
+        const content = result.data.choices[0]?.message?.content?.trim();
+        if (content) {
+          keyword = content.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "event";
+        }
+      }
+
+      // Use Unsplash source for a deterministic, high-quality image
+      const imageUrl = `https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop&q=80`;
+      // Use picsum for a random but consistent image based on the keyword hash
+      const hash = Array.from(keyword).reduce((acc, c) => acc + c.charCodeAt(0), 0);
+      const picsumUrl = `https://picsum.photos/seed/${encodeURIComponent(keyword + hash)}/800/400`;
+
+      return { success: true, imageUrl: picsumUrl, keyword };
+    } catch (err: any) {
+      console.error("[AI Image] Error:", err);
+      return { success: false, imageUrl: null, error: err?.message || "Failed to generate image" };
+    }
+  },
+});
