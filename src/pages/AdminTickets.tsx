@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { MenuBar } from '@/components/ui/glow-menu';
 import { BackgroundPaths } from '@/components/ui/background-paths';
-import { ThemeProvider } from 'next-themes';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
@@ -424,9 +423,5 @@ function AdminTicketsContent() {
 }
 
 export default function AdminTickets() {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AdminTicketsContent />
-    </ThemeProvider>
-  );
+  return <AdminTicketsContent />;
 }

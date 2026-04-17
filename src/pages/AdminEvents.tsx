@@ -16,7 +16,6 @@ import {
   Square
 } from "lucide-react";
 import { BackgroundPaths } from "@/components/ui/background-paths";
-import { ThemeProvider } from 'next-themes';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/button';
@@ -668,10 +667,5 @@ function AdminEventsContent() {
 }
 
 export default function AdminEvents() {
-  const navigate = useNavigate();
-  return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AdminEventsContent />
-    </ThemeProvider>
-  );
+  return <AdminEventsContent />;
 }

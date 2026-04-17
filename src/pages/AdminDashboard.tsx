@@ -38,14 +38,12 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { MenuBar } from '@/components/ui/glow-menu';
-import { ThemeProvider, useTheme } from 'next-themes';
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { useNavigate } from "react-router";
 import { CreateAdminModal } from '@/components/admin/CreateAdminModal';
 
 function AdminDashboardContent() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
   
   // Fetch real event data
   const currentOngoingEvent = useQuery(api.events.getCurrentOngoingEvent);
@@ -248,9 +246,6 @@ function AdminDashboardContent() {
               <div className="w-10 h-10 md:w-12 md:h-12 bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold text-lg">
                 AB
               </div>
-              <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 border-2 border-black dark:border-white">
-                {theme === 'dark' ? 'Light' : 'Dark'}
-              </button>
             </div>
           </div>
         </header>
@@ -545,9 +540,5 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboard() {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AdminDashboardContent />
-    </ThemeProvider>
-  )
+  return <AdminDashboardContent />;
 }

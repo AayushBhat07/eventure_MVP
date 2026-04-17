@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { AdminNavBar } from "@/components/admin/admin-navbar";
-import { ThemeProvider } from "@/components/theme-provider";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -497,9 +496,5 @@ function EventCheckInContent() {
 }
 
 export default function EventCheckIn() {
-  return (
-    <ThemeProvider defaultTheme="system">
-      <EventCheckInContent />
-    </ThemeProvider>
-  );
+  return <EventCheckInContent />;
 }
