@@ -380,9 +380,9 @@ function AdminEventsContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {allEvents.map((event: any) => (
                 <Card key={event._id} className="border-4 border-black dark:border-white bg-card/80 backdrop-blur-sm overflow-hidden">
-                  <div className="w-full h-32 flex items-center justify-center bg-gradient-to-br from-indigo-600 to-violet-500 border-b-4 border-black dark:border-white p-4">
+                  <div className="w-full h-32 flex items-center justify-center bg-white dark:bg-neutral-900 border-b-4 border-black dark:border-white p-4">
                     <span
-                      className="text-2xl sm:text-3xl text-white/90 text-center leading-tight select-none drop-shadow-md"
+                      className="text-3xl sm:text-4xl text-black dark:text-white text-center leading-tight select-none"
                       style={{ fontFamily: "'Caveat', cursive", fontWeight: 700 }}
                     >
                       {event.name}

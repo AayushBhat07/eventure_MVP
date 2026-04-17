@@ -78,9 +78,9 @@ function EventCard({ event, index }: { event: any; index: number }) {
       className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff] overflow-hidden flex flex-col cursor-pointer hover:shadow-[3px_3px_0px_#000] dark:hover:shadow-[3px_3px_0px_#fff] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150"
     >
       {/* Handwriting-styled event name banner */}
-      <div className={`relative aspect-video overflow-hidden bg-gradient-to-br ${getNameColor(event.name)} flex items-center justify-center p-6`}>
+      <div className="relative aspect-video overflow-hidden bg-white dark:bg-neutral-800 border-b-2 border-black dark:border-white flex items-center justify-center p-6">
         <span
-          className="text-3xl sm:text-4xl text-white/90 text-center leading-tight select-none drop-shadow-md"
+          className="text-4xl sm:text-5xl text-black dark:text-white text-center leading-tight select-none"
           style={{ fontFamily: "'Caveat', cursive", fontWeight: 700 }}
         >
           {event.name}
