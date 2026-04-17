@@ -21,6 +21,7 @@ import type * as communication from "../communication.js";
 import type * as dashboard from "../dashboard.js";
 import type * as debug from "../debug.js";
 import type * as devTools from "../devTools.js";
+import type * as email from "../email.js";
 import type * as events from "../events.js";
 import type * as generators_createAdminUser from "../generators/createAdminUser.js";
 import type * as generators_createSampleData from "../generators/createSampleData.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   debug: typeof debug;
   devTools: typeof devTools;
+  email: typeof email;
   events: typeof events;
   "generators/createAdminUser": typeof generators_createAdminUser;
   "generators/createSampleData": typeof generators_createSampleData;

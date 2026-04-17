@@ -790,3 +790,91 @@ export const deleteWinner = mutation({
     return { success: true, message: "Winner removed" };
   },
 });
+
+export const sendCheckInEmailsForEvent = mutation({
+  args: {
+    eventId: v.id("events"),
+  },
+  handler: async (ctx, args) => {
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      return { success: false, message: "Event not found" };
+    }
+
+    // Get all registrations for this event
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event", (q) => q.eq("eventId", args.eventId))
+      .take(500);
+
+    if (registrations.length === 0) {
+      return { success: false, message: "No registrations found for this event" };
+    }
+
+    // Generate codes for registrations that don't have one
+    const existingCodes = new Set(
+      registrations.filter((r) => r.checkInCode).map((r) => r.checkInCode!)
+    );
+
+    const updatedRegistrations: Array<{
+      userEmail: string;
+      userName: string;
+      checkInCode: string;
+    }> = [];
+
+    for (const reg of registrations) {
+      let code = reg.checkInCode;
+      if (!code) {
+        // Generate unique code
+        do {
+          code = generateCode();
+        } while (existingCodes.has(code));
+        existingCodes.add(code);
+        await ctx.db.patch(reg._id, { checkInCode: code });
+      }
+
+      // Get user details
+      const user = await ctx.db.get(reg.userId);
+      if (user?.email) {
+        updatedRegistrations.push({
+          userEmail: user.email,
+          userName: user.name || "Participant",
+          checkInCode: code,
+        });
+      }
+    }
+
+    if (updatedRegistrations.length === 0) {
+      return { success: false, message: "No users with email addresses found" };
+    }
+
+    // Format event date and time
+    const startDateObj = new Date(event.startDate);
+    const eventDate = startDateObj.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+    const eventTime = startDateObj.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    // Schedule the email action
+    await ctx.scheduler.runAfter(0, internal.email.sendCheckInEmails, {
+      eventId: args.eventId,
+      eventName: event.name,
+      eventDate,
+      eventTime,
+      eventVenue: event.venue,
+      registrations: updatedRegistrations,
+    });
+
+    return {
+      success: true,
+      message: `Sending check-in emails to ${updatedRegistrations.length} participants`,
+    };
+  },
+});
