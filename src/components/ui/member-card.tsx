@@ -18,9 +18,10 @@ interface MemberCardProps {
   member: Member;
   onEdit: () => void;
   isHovered: boolean;
+  hideEdit?: boolean;
 }
 
-const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, isHovered }) => {
+const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, isHovered, hideEdit }) => {
   return (
     <motion.div
       className="relative bg-white dark:bg-gray-800 border-4 border-black dark:border-white shadow-[8px_8px_0px_#000] dark:shadow-[8px_8px_0px_#fff] transition-all duration-300 rounded-lg z-10"
@@ -44,14 +45,16 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, isHovered }) =>
               {member.branch}
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onEdit}
-            className="border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
-          >
-            EDIT
-          </Button>
+          {!hideEdit && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onEdit}
+              className="border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+            >
+              EDIT
+            </Button>
+          )}
         </div>
       </div>
 
@@ -61,14 +64,16 @@ const MemberCard: React.FC<MemberCardProps> = ({ member, onEdit, isHovered }) =>
           <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">
             {member.name}
           </h3>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onEdit}
-            className="border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
-          >
-            EDIT
-          </Button>
+          {!hideEdit && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onEdit}
+              className="border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+            >
+              EDIT
+            </Button>
+          )}
         </div>
         
         <div className="space-y-3">

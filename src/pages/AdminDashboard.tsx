@@ -251,10 +251,24 @@ function AdminDashboardContent() {
         </div>
 
         <div className="container mx-auto px-4 py-8 pt-20">
-          {/* Add Create New Admin Button */}
-          <div className="mb-6 flex justify-end">
-            <CreateAdminModal />
-          </div>
+          {/* Add Create New Admin Button - admin only */}
+          {(() => {
+            try {
+              const s = sessionStorage.getItem("adminUser");
+              if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (
+                <div className="mb-6 flex justify-end">
+                  <CreateAdminModal />
+                </div>
+              ); }
+            } catch {}
+            return (
+              <div className="mb-6 flex justify-end">
+                <div className="px-3 py-1.5 text-xs font-black uppercase tracking-wider bg-amber-400 text-black border-2 border-black">
+                  Team Member — View Only
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Current Event - Left Column */}

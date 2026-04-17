@@ -248,15 +248,23 @@ export default function AdminTeam() {
                           <div className="font-bold uppercase">{admin.role}</div>
                         </div>
                       </div>
-                      <div className="mt-4">
-                        <Button
-                          variant="outline"
-                          className="w-full border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
-                          onClick={() => openEdit(admin)}
-                        >
-                          EDIT
-                        </Button>
-                      </div>
+                      {(() => {
+                        try {
+                          const s = sessionStorage.getItem("adminUser");
+                          if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (
+                            <div className="mt-4">
+                              <Button
+                                variant="outline"
+                                className="w-full border-2 border-black dark:border-white font-bold hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+                                onClick={() => openEdit(admin)}
+                              >
+                                EDIT
+                              </Button>
+                            </div>
+                          ); }
+                        } catch {}
+                        return null;
+                      })()}
                     </div>
                   ))}
                 </div>
@@ -300,6 +308,7 @@ export default function AdminTeam() {
                         }}
                         onEdit={() => openEdit(member)}
                         isHovered={hoveredMemberId === String(member._id)}
+                        hideEdit={!isAdmin}
                       />
                     </div>
                   ))}

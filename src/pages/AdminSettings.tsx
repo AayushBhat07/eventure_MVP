@@ -51,9 +51,22 @@ function AdminSettingsContent() {
   useEffect(() => {
     const storedAdmin = sessionStorage.getItem("adminUser");
     if (storedAdmin) {
-      setAdminUser(JSON.parse(storedAdmin));
+      const parsed = JSON.parse(storedAdmin);
+      setAdminUser(parsed);
+      // Team members can only view their own settings, not edit admin settings
     }
   }, []);
+
+  const isTeamMember = (() => {
+    try {
+      const s = sessionStorage.getItem("adminUser");
+      if (s) {
+        const p = JSON.parse(s);
+        return p?.role === "teammember";
+      }
+    } catch {}
+    return false;
+  })();
 
   // Pre-fill form with existing data from session (admin session, not Convex auth)
   useEffect(() => {
@@ -259,9 +272,14 @@ function AdminSettingsContent() {
 
               {/* Save Button */}
               <div className="pt-4">
+                {isTeamMember && (
+                  <div className="mb-3 px-4 py-2 bg-yellow-400 text-black text-xs font-black uppercase tracking-wide text-center border-2 border-black">
+                    VIEW ONLY — Team members cannot edit settings
+                  </div>
+                )}
                 <Button
                   onClick={handleSave}
-                  disabled={isLoading || !hasChanges()}
+                  disabled={isLoading || !hasChanges() || isTeamMember}
                   className="w-full h-14 bg-black text-white font-bold text-lg border-4 border-black hover:bg-gray-800 disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed rounded-none shadow-[4px_4px_0px_#666]"
                 >
                   {isLoading ? "SAVING..." : "SAVE CHANGES »"}

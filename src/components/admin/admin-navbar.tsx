@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { Link, useLocation } from "react-router";
 import { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getAdminSession } from "@/hooks/use-admin-session"
 
 interface NavItem {
   name: string
@@ -40,6 +41,9 @@ export function AdminNavBar({ items, className }: AdminNavBarProps) {
     }
   }, [location.pathname, items])
 
+  const adminSession = getAdminSession();
+  const isTeamMember = adminSession?.role === "teammember";
+
   return (
     <div
       className={cn(
@@ -48,14 +52,22 @@ export function AdminNavBar({ items, className }: AdminNavBarProps) {
       )}
     >
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <span className="text-xl font-bold tracking-tight text-foreground">Admin Panel</span>
+          {isTeamMember && (
+            <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-amber-400 text-black border border-black rounded-sm">
+              View Only
+            </span>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
           {items.map((item) => {
             const Icon = item.icon
             const isActive = activeTab === item.name
+
+            // Hide Settings for team members
+            if (isTeamMember && item.name === "Settings") return null;
 
             return (
               <Link

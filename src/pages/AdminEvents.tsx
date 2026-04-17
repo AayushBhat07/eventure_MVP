@@ -311,14 +311,26 @@ function AdminEventsContent() {
         <header className="border-b-2 border-black dark:border-white/20 p-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
-            <Button
-              className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
-              size="lg"
-              onClick={() => setCreateModalOpen(true)}
-            >
-              <Plus className="mr-2 h-5 w-5" />
-              CREATE EVENT
-            </Button>
+            {(() => {
+              try {
+                const s = sessionStorage.getItem("adminUser");
+                if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (
+                  <Button
+                    className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
+                    size="lg"
+                    onClick={() => setCreateModalOpen(true)}
+                  >
+                    <Plus className="mr-2 h-5 w-5" />
+                    CREATE EVENT
+                  </Button>
+                ); }
+              } catch {}
+              return (
+                <div className="px-3 py-1.5 text-xs font-black uppercase tracking-wider bg-amber-400 text-black border-2 border-black">
+                  Team Member — View Only
+                </div>
+              );
+            })()}
           </div>
         </header>
 
@@ -350,22 +362,30 @@ function AdminEventsContent() {
                       <p><strong>Venue:</strong> {event.venue}</p>
                       <div className="flex items-center gap-2">
                         <strong>Status:</strong>
-                        <select
-                          value={event.status}
-                          onChange={async (e) => {
-                            const newStatus = e.target.value as "active" | "completed" | "cancelled";
-                            try {
-                              const result = await updateEventAsAdmin({ id: event._id, status: newStatus });
-                              if (result?.success) toast.success(`Status updated to ${newStatus}`);
-                              else toast.error(result?.message || "Failed to update status");
-                            } catch { toast.error("Failed to update status"); }
-                          }}
-                          className="border-2 border-black dark:border-white bg-background text-foreground text-xs font-mono px-2 py-1 cursor-pointer focus:outline-none"
-                        >
-                          <option value="active">Active</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
+                        {(() => {
+                          try {
+                            const s = sessionStorage.getItem("adminUser");
+                            if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (
+                              <select
+                                value={event.status}
+                                onChange={async (e) => {
+                                  const newStatus = e.target.value as "active" | "completed" | "cancelled";
+                                  try {
+                                    const result = await updateEventAsAdmin({ id: event._id, status: newStatus });
+                                    if (result?.success) toast.success(`Status updated to ${newStatus}`);
+                                    else toast.error(result?.message || "Failed to update status");
+                                  } catch { toast.error("Failed to update status"); }
+                                }}
+                                className="border-2 border-black dark:border-white bg-background text-foreground text-xs font-mono px-2 py-1 cursor-pointer focus:outline-none"
+                              >
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                              </select>
+                            ); }
+                          } catch {}
+                          return <span className="text-xs font-bold uppercase px-2 py-1 border-2 border-black dark:border-white bg-muted">{event.status}</span>;
+                        })()}
                       </div>
                     </div>
                   </CardContent>
@@ -374,12 +394,20 @@ function AdminEventsContent() {
                       <Button onClick={() => handleInfoClick(event)} variant="outline" size="sm" className="flex-1 border-2 border-black dark:border-white font-mono">
                         <Info className="h-4 w-4 mr-1" />INFO
                       </Button>
-                      <Button onClick={() => handleEditClick(event)} variant="outline" size="sm" className="flex-1 border-2 border-black dark:border-white font-mono">
-                        <Edit className="h-4 w-4 mr-1" />EDIT
-                      </Button>
-                      <Button onClick={() => handleDeleteClick(event)} variant="outline" size="sm" className="flex-1 border-2 border-black dark:border-white font-mono text-red-600 hover:bg-red-50 dark:hover:bg-red-950">
-                        <Trash2 className="h-4 w-4 mr-1" />DELETE
-                      </Button>
+                      {(() => {
+                        try {
+                          const s = sessionStorage.getItem("adminUser");
+                          if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (<>
+                            <Button onClick={() => handleEditClick(event)} variant="outline" size="sm" className="flex-1 border-2 border-black dark:border-white font-mono">
+                              <Edit className="h-4 w-4 mr-1" />EDIT
+                            </Button>
+                            <Button onClick={() => handleDeleteClick(event)} variant="outline" size="sm" className="flex-1 border-2 border-black dark:border-white font-mono text-red-600 hover:bg-red-50 dark:hover:bg-red-950">
+                              <Trash2 className="h-4 w-4 mr-1" />DELETE
+                            </Button>
+                          </>); }
+                        } catch {}
+                        return null;
+                      })()}
                     </div>
                   </CardFooter>
                 </Card>

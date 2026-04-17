@@ -370,7 +370,10 @@ function BroadcastsContent({ selectedChannel }: { selectedChannel: BroadcastChan
     if (user?.role === 'admin') return true;
     try {
       const adminSession = sessionStorage.getItem('adminUser');
-      if (adminSession) return true;
+      if (adminSession) {
+        const parsed = JSON.parse(adminSession);
+        return parsed?.role === 'admin';
+      }
     } catch {}
     return false;
   })();
