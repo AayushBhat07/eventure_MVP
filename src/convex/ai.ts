@@ -4,11 +4,24 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { vly } from "../lib/vly-integrations";
 
+function checkVlyKey(): string | null {
+  const key = process.env.VLY_INTEGRATION_KEY;
+  if (!key || key.trim().length === 0) {
+    return "VLY_INTEGRATION_KEY is not configured. Please set it in the API Keys → Backend tab.";
+  }
+  return null;
+}
+
 export const enhanceEventDescription = action({
   args: {
     description: v.string(),
   },
   handler: async (_ctx, args) => {
+    const keyError = checkVlyKey();
+    if (keyError) {
+      return { success: false, enhanced: null, error: keyError };
+    }
+
     try {
       const result = await vly.ai.completion({
         model: "gpt-4o-mini",
@@ -32,10 +45,13 @@ export const enhanceEventDescription = action({
           return { success: true, enhanced };
         }
       }
-      return { success: false, enhanced: null, error: result.error || "No response from AI" };
+      const errorMsg = result.error || "No response from AI";
+      console.error("[AI Enhance] API returned error:", errorMsg);
+      return { success: false, enhanced: null, error: errorMsg.includes("Invalid token") ? "AI integration key is invalid or expired. Please check VLY_INTEGRATION_KEY in API Keys → Backend." : errorMsg };
     } catch (err: any) {
       console.error("[AI Enhance] Error:", err);
-      return { success: false, enhanced: null, error: err?.message || "AI enhancement failed" };
+      const msg = err?.message || "AI enhancement failed";
+      return { success: false, enhanced: null, error: msg.includes("Invalid token") ? "AI integration key is invalid or expired. Please check VLY_INTEGRATION_KEY in API Keys → Backend." : msg };
     }
   },
 });
@@ -46,32 +62,43 @@ export const generateEventImageUrl = action({
   },
   handler: async (_ctx, args) => {
     try {
-      const result = await vly.ai.completion({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are a helper that generates a single short search keyword (1-2 words) for finding a relevant stock photo for an event. Only respond with the keyword, nothing else. Examples: "hackathon" → "coding", "sports meet" → "athletics", "cultural fest" → "festival", "workshop" → "workshop classroom", "seminar" → "conference".`,
-          },
-          {
-            role: "user",
-            content: args.eventName,
-          },
-        ],
-        maxTokens: 20,
-        temperature: 0.5,
-      });
-
+      // Try AI to get a keyword, but fall back gracefully if AI is unavailable
       let keyword = "event";
-      if (result.success && result.data) {
-        const content = result.data.choices[0]?.message?.content?.trim();
-        if (content) {
-          keyword = content.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "event";
+      const keyError = checkVlyKey();
+
+      if (!keyError) {
+        try {
+          const result = await vly.ai.completion({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: `You are a helper that generates a single short search keyword (1-2 words) for finding a relevant stock photo for an event. Only respond with the keyword, nothing else. Examples: "hackathon" → "coding", "sports meet" → "athletics", "cultural fest" → "festival", "workshop" → "workshop classroom", "seminar" → "conference".`,
+              },
+              {
+                role: "user",
+                content: args.eventName,
+              },
+            ],
+            maxTokens: 20,
+            temperature: 0.5,
+          });
+
+          if (result.success && result.data) {
+            const content = result.data.choices[0]?.message?.content?.trim();
+            if (content) {
+              keyword = content.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "event";
+            }
+          }
+        } catch {
+          // AI unavailable, use event name as keyword
+          keyword = args.eventName.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
         }
+      } else {
+        // No AI key, derive keyword from event name
+        keyword = args.eventName.split(/\s+/).slice(0, 2).join(" ").toLowerCase() || "event";
       }
 
-      // Use Unsplash source for a deterministic, high-quality image
-      const imageUrl = `https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop&q=80`;
       // Use picsum for a random but consistent image based on the keyword hash
       const hash = Array.from(keyword).reduce((acc, c) => acc + c.charCodeAt(0), 0);
       const picsumUrl = `https://picsum.photos/seed/${encodeURIComponent(keyword + hash)}/800/400`;
