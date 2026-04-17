@@ -400,3 +400,62 @@ export const getActiveEventsForChannels = query({
     }));
   },
 });
+
+// ===== Notifications =====
+
+export const createNotification = mutation({
+  args: {
+    recipientId: v.string(),
+    type: v.string(),
+    content: v.string(),
+    linkId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("notifications", {
+      recipientId: args.recipientId,
+      type: args.type,
+      content: args.content,
+      isRead: false,
+      linkId: args.linkId,
+    });
+    return id;
+  },
+});
+
+export const getUserNotifications = query({
+  args: {
+    recipientId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("notifications")
+      .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
+      .order("desc")
+      .take(20);
+  },
+});
+
+export const markNotificationAsRead = mutation({
+  args: {
+    notificationId: v.id("notifications"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.notificationId, { isRead: true });
+    return { success: true };
+  },
+});
+
+export const getUnreadNotificationCount = query({
+  args: {
+    recipientId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const unread = await ctx.db
+      .query("notifications")
+      .withIndex("by_recipient_and_read", (q) =>
+        q.eq("recipientId", args.recipientId).eq("isRead", false)
+      )
+      .take(100);
+    return unread.length;
+  },
+});

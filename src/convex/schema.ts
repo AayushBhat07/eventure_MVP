@@ -157,6 +157,15 @@ const schema = defineSchema({
   }).index("by_event", ["eventId"])
     .index("by_author", ["authorId"]),
 
+  notifications: defineTable({
+    recipientId: v.string(), // Can be users id, admins id, or teamMembers id
+    type: v.string(), // e.g. "broadcast", "event", "registration", "certificate", etc.
+    content: v.string(),
+    isRead: v.boolean(),
+    linkId: v.optional(v.string()), // Optional reference to related entity (event id, message id, etc.)
+  }).index("by_recipient", ["recipientId"])
+    .index("by_recipient_and_read", ["recipientId", "isRead"]),
+
 },
 {
   schemaValidation: false
