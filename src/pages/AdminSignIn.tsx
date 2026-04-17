@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { CreateAdminModal } from "@/components/admin/CreateAdminModal";
 
 export default function AdminSignIn() {
   const [email, setEmail] = useState("");
@@ -114,20 +113,6 @@ export default function AdminSignIn() {
               </Button>
             </div>
           </form>
-        )}
-
-        {/* Add a quick-create section to seed an admin if needed */}
-        {!loginSuccess && (
-          <div className="space-y-4">
-            <div className="pt-2">
-              <div className="text-center text-xs text-muted-foreground mb-2">
-                Don't have an admin yet?
-              </div>
-              <div className="flex justify-center">
-                <CreateAdminModal />
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </div>
