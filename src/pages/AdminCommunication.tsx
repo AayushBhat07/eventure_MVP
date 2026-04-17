@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { Dock } from '@/components/ui/dock';
 import { NotificationBell } from '@/components/ui/NotificationBell';
+import { MentionAutocomplete } from '@/components/ui/MentionAutocomplete';
 import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -415,11 +416,11 @@ function BroadcastsContent({ selectedChannel }: { selectedChannel: BroadcastChan
       </div>
       {isAdmin ? (
         <div className="mb-5">
-          <textarea
+          <MentionAutocomplete
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
             onKeyDown={handleKeyDown}
-            placeholder="Write a broadcast message..."
+            placeholder="Write a broadcast message... Use @ to mention"
             rows={3}
             className="w-full border-2 border-black dark:border-white bg-[#FDF8F3] dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-black dark:text-white outline-none resize-none focus:shadow-[3px_3px_0px_0px_#6D28D9] transition-shadow placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
           />
@@ -550,11 +551,11 @@ function EventChannelsContent({ selectedEventId }: { selectedEventId: Id<"events
       {/* Compose box */}
       {isAdminOrTeam ? (
         <div className="mb-5">
-          <textarea
+          <MentionAutocomplete
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
             onKeyDown={handleKeyDown}
-            placeholder="Write a message to this event channel..."
+            placeholder="Write a message... Use @ to mention"
             rows={3}
             className="w-full border-2 border-black dark:border-white bg-[#FDF8F3] dark:bg-neutral-800 px-4 py-3 text-sm font-bold text-black dark:text-white outline-none resize-none focus:shadow-[3px_3px_0px_0px_#6D28D9] transition-shadow placeholder:text-neutral-400 dark:placeholder:text-neutral-500"
           />

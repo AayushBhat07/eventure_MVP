@@ -448,6 +448,49 @@ export const getActiveEventsForChannels = query({
   },
 });
 
+// ===== Mention Autocomplete =====
+
+export const searchTeamMembers = query({
+  args: {
+    searchTerm: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!args.searchTerm.trim()) return [];
+    const term = args.searchTerm.toLowerCase();
+
+    // Search across users, admins, and teamMembers
+    const [users, admins, teamMembers] = await Promise.all([
+      ctx.db.query("users").take(200),
+      ctx.db.query("admins").take(100),
+      ctx.db.query("teamMembers").take(100),
+    ]);
+
+    const results: Array<{ name: string; email: string }> = [];
+    const seen = new Set<string>();
+
+    for (const u of users) {
+      if (u.name && u.name.toLowerCase().includes(term) && !seen.has(u.name.toLowerCase())) {
+        seen.add(u.name.toLowerCase());
+        results.push({ name: u.name, email: u.email || "" });
+      }
+    }
+    for (const a of admins) {
+      if (a.name && a.name.toLowerCase().includes(term) && !seen.has(a.name.toLowerCase())) {
+        seen.add(a.name.toLowerCase());
+        results.push({ name: a.name, email: a.email });
+      }
+    }
+    for (const t of teamMembers) {
+      if (t.name && t.name.toLowerCase().includes(term) && !seen.has(t.name.toLowerCase())) {
+        seen.add(t.name.toLowerCase());
+        results.push({ name: t.name, email: t.email });
+      }
+    }
+
+    return results.slice(0, 10);
+  },
+});
+
 // ===== Notifications =====
 
 export const createNotification = mutation({
