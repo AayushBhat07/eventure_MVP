@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MenuBar } from "@/components/ui/glow-menu";
+import { BackgroundPaths } from "@/components/ui/background-paths";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router";
 import { Home, Calendar, Users, Settings, Ticket, ScanLine, BarChart3 } from "lucide-react";
@@ -179,7 +180,11 @@ function AdminSettingsContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-black font-mono">
+    <div className="min-h-screen bg-background text-foreground font-mono relative">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
+      </div>
+      <div className="relative z-10">
       {/* Menu Bar */}
       <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
         <MenuBar items={menuItems} onItemClick={(item) => navigate(item)} activeItem={activeMenuItem}/>
@@ -300,6 +305,7 @@ function AdminSettingsContent() {
             </div>
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );

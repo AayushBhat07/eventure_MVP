@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Users, Home, Calendar, Settings, Ticket, ScanLine, BarChart3 } from "lucide-react";
 import { MenuBar } from "@/components/ui/glow-menu";
+import { BackgroundPaths } from "@/components/ui/background-paths";
 import { useNavigate } from "react-router";
 
 type CombinedAdmin = {
@@ -178,6 +179,10 @@ export default function AdminTeam() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
+      </div>
+      <div className="relative z-10">
       <header className="border-b-4 border-black dark:border-white p-4 bg-card/80 backdrop-blur-sm">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl md:text-3xl font-black tracking-tight">TEAM MANAGEMENT</h1>
@@ -330,6 +335,7 @@ export default function AdminTeam() {
           </div>
         )}
       </main>
+      </div>
 
       {/* Edit Modal */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

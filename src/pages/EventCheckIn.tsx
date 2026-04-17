@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { AdminNavBar } from "@/components/admin/admin-navbar";
+import { BackgroundPaths } from "@/components/ui/background-paths";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -231,7 +232,11 @@ function EventCheckInContent() {
   const activeEvents = events?.filter((ev: { status: string }) => ev.status === "active") || [];
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono relative flex flex-col">
+    <div className="min-h-screen bg-background text-foreground font-mono relative">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
+      </div>
+      <div className="relative z-10 flex flex-col min-h-screen">
       <AdminNavBar items={ADMIN_NAV_ITEMS} />
       <div className="flex-1 pt-20 pb-12 px-4 md:px-8 max-w-5xl mx-auto w-full">
         <motion.h1
@@ -491,6 +496,7 @@ function EventCheckInContent() {
             </p>
           </motion.div>
         )}
+      </div>
       </div>
     </div>
   );

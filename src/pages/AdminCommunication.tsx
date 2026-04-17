@@ -5,6 +5,7 @@ import { Dock } from '@/components/ui/dock';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { MentionAutocomplete } from '@/components/ui/MentionAutocomplete';
 import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket, ScanLine, BarChart3 } from 'lucide-react';
+import { BackgroundPaths } from '@/components/ui/background-paths';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/hooks/use-auth';
@@ -629,7 +630,11 @@ export default function AdminCommunication() {
   })();
 
   return (
-    <div className="min-h-screen bg-[#FDF8F3] dark:bg-neutral-950 flex flex-col">
+    <div className="min-h-screen bg-background text-foreground font-mono relative">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <BackgroundPaths title="" />
+      </div>
+      <div className="relative z-10 flex flex-col min-h-screen">
       <AdminNavBar items={ADMIN_NAV_ITEMS} />
       <div className="flex-1 pt-20 pb-28 px-4 md:px-8 max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
@@ -669,6 +674,7 @@ export default function AdminCommunication() {
         </div>
       </div>
       <Dock items={DOCK_ITEMS} className="!top-auto !bottom-4" />
+      </div>
     </div>
   );
 }
