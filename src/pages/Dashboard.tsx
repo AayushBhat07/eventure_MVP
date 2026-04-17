@@ -1,15 +1,19 @@
 import { Protected } from "@/lib/protected-page";
 import { Dock } from "@/components/ui/dock";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher-1";
-import { Home, Calendar, Trophy, User, Settings } from "lucide-react";
+import { Home, Calendar, Trophy, User, Settings, HelpCircle } from "lucide-react";
 import { EventDiscoveryWidget } from "@/components/dashboard/EventDiscoveryWidget";
 import { RegisteredEventsWidget } from "@/components/dashboard/RegisteredEventsWidget";
 import { CertificatesWidget } from "@/components/dashboard/CertificatesWidget";
 import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
 import { ProfileWidget } from "@/components/dashboard/ProfileWidget";
 import { EventDiscoveryGrid } from "@/components/dashboard/EventDiscoveryGrid";
+import { CreateTicketModal } from "@/components/dashboard/CreateTicketModal";
+import { useState } from "react";
 
 export default function Dashboard() {
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
+
   const dockItems = [
     { icon: <Home size={20} />, label: 'Home', href: '/dashboard' },
     { icon: <Calendar size={20} />, label: 'Events', href: '/events' },
@@ -20,6 +24,9 @@ export default function Dashboard() {
 
   return (
     <Protected>
+      {/* Ticket Modal */}
+      <CreateTicketModal isOpen={ticketModalOpen} onClose={() => setTicketModalOpen(false)} />
+
       {/* Top Dock */}
       <Dock items={dockItems} />
 
@@ -29,10 +36,19 @@ export default function Dashboard() {
       </div>
 
       <div className="min-h-screen bg-[#f5f0e8] dark:bg-neutral-950 px-6 pt-24 pb-16">
-        {/* DASHBOARD Heading */}
-        <h1 className="text-5xl sm:text-6xl font-black uppercase tracking-tight text-black dark:text-white mb-8">
-          DASHBOARD
-        </h1>
+        {/* DASHBOARD Heading + Support Button */}
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-5xl sm:text-6xl font-black uppercase tracking-tight text-black dark:text-white">
+            DASHBOARD
+          </h1>
+          <button
+            onClick={() => setTicketModalOpen(true)}
+            className="flex items-center gap-2 border-2 border-black dark:border-white bg-white dark:bg-neutral-900 text-black dark:text-white px-4 py-2.5 text-xs font-black uppercase tracking-wider shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_#000] dark:hover:shadow-[2px_2px_0px_#fff] transition-all"
+          >
+            <HelpCircle className="h-4 w-4" />
+            Support
+          </button>
+        </div>
 
         {/* Main 3-column grid */}
         <div className="grid grid-cols-1 md:grid-cols-[260px_1fr_280px] gap-4 mb-12">
