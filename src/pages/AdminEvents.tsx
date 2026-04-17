@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ThemeProvider } from 'next-themes';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -64,6 +64,8 @@ function AdminEventsContent() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedVolunteers, setSelectedVolunteers] = useState<Id<"teamMembers">[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editDescription, setEditDescription] = useState('');
+  const [isEnhancingEdit, setIsEnhancingEdit] = useState(false);
   const [eventDetails, setEventDetails] = useState({
     name: '',
     description: '',
@@ -80,6 +82,7 @@ function AdminEventsContent() {
   const teamMembers = useQuery(api.team.getAllTeamMembers);
   const updateEventAsAdmin = useMutation(api.events.updateEventAsAdmin);
   const deleteEventAsAdmin = useMutation(api.events.deleteEventAsAdmin);
+  const enhanceDescription = useAction(api.ai.enhanceEventDescription);
 
   // Get individual participants for the selected event
   const participants = useQuery(
@@ -102,6 +105,7 @@ function AdminEventsContent() {
 
   const handleEditClick = (event: any) => {
     setSelectedEvent(event);
+    setEditDescription(event.description || '');
     const eventVolunteerIds = event.volunteers?.map((v: any) => v._id as Id<"teamMembers">) || [];
     setSelectedVolunteers(eventVolunteerIds);
     setEditModalOpen(true);
@@ -118,7 +122,6 @@ function AdminEventsContent() {
     try {
       const formData = new FormData(e.currentTarget);
       const eventName = formData.get("eventName") as string;
-      const description = formData.get("description") as string;
       const venue = formData.get("venue") as string;
       const eventDate = formData.get("eventDate") as string;
       const eventTime = formData.get("eventTime") as string;
@@ -129,7 +132,7 @@ function AdminEventsContent() {
       const result = await updateEventAsAdmin({
         id: selectedEvent._id,
         name: eventName,
-        description: description || "",
+        description: editDescription || "",
         venue,
         startDate,
         endDate,
@@ -141,6 +144,27 @@ function AdminEventsContent() {
       toast.error("Failed to update event.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEnhanceEditDescription = async () => {
+    if (!editDescription.trim()) {
+      toast.error("Please write a description first");
+      return;
+    }
+    setIsEnhancingEdit(true);
+    try {
+      const result = await enhanceDescription({ description: editDescription });
+      if (result.success && result.enhanced) {
+        setEditDescription(result.enhanced);
+        toast.success("Description enhanced!");
+      } else {
+        toast.error(result.error || "Failed to enhance description");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Enhancement failed");
+    } finally {
+      setIsEnhancingEdit(false);
     }
   };
 
@@ -437,8 +461,26 @@ function AdminEventsContent() {
                   <Input name="eventName" defaultValue={selectedEvent.name} className="border-2 border-black dark:border-white font-mono mt-1" required />
                 </div>
                 <div>
-                  <Label className="font-bold">DESCRIPTION</Label>
-                  <Textarea name="description" defaultValue={selectedEvent.description} className="border-2 border-black dark:border-white font-mono mt-1" />
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="font-bold">DESCRIPTION</Label>
+                    <button
+                      type="button"
+                      onClick={handleEnhanceEditDescription}
+                      disabled={isEnhancingEdit || !editDescription.trim()}
+                      className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-wider border-2 border-black dark:border-white bg-[#6D28D9] text-white hover:bg-[#5B21B6] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-[2px_2px_0px_#000] dark:shadow-[2px_2px_0px_#fff]"
+                    >
+                      {isEnhancingEdit ? (
+                        <><Loader2 className="h-3 w-3 animate-spin" /> Enhancing...</>
+                      ) : (
+                        <>✨ Enhance</>
+                      )}
+                    </button>
+                  </div>
+                  <Textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="border-2 border-black dark:border-white font-mono mt-1"
+                  />
                 </div>
                 <div>
                   <Label className="font-bold">VENUE</Label>

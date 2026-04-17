@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Users, CheckSquare, Square } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { X, Users, CheckSquare, Square, Sparkles, Loader2 } from "lucide-react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
@@ -32,9 +32,11 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
 
   const [selectedVolunteers, setSelectedVolunteers] = useState<Set<Id<"teamMembers">>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const createEvent = useMutation(api.events.createEventAsAdmin);
   const teamMembers = useQuery(api.team.getAllTeamMembers);
+  const enhanceDescription = useAction(api.ai.enhanceEventDescription);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -124,6 +126,27 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
     }
   };
 
+  const handleEnhanceDescription = async () => {
+    if (!formData.description.trim()) {
+      toast.error("Please write a description first");
+      return;
+    }
+    setIsEnhancing(true);
+    try {
+      const result = await enhanceDescription({ description: formData.description });
+      if (result.success && result.enhanced) {
+        setFormData(prev => ({ ...prev, description: result.enhanced }));
+        toast.success("Description enhanced!");
+      } else {
+        toast.error(result.error || "Failed to enhance description");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Enhancement failed");
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   const formatVolunteerDisplay = (member: any) => {
     const name = member.name || 'Unknown Name';
     const parts = [member.branch, member.rollNo].filter(Boolean);
@@ -140,7 +163,6 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="text-2xl font-bold tracking-tight">CREATE NEW EVENT</DialogTitle>
-
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -169,7 +191,22 @@ export function CreateEventModal({ isOpen, onClose, onOpenChange }: CreateEventM
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-bold">EVENT DESCRIPTION</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-bold">EVENT DESCRIPTION</Label>
+              <button
+                type="button"
+                onClick={handleEnhanceDescription}
+                disabled={isEnhancing || !formData.description.trim()}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider border-2 border-black dark:border-white bg-[#6D28D9] text-white hover:bg-[#5B21B6] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-[2px_2px_0px_#000] dark:shadow-[2px_2px_0px_#fff] hover:shadow-[1px_1px_0px_#000] dark:hover:shadow-[1px_1px_0px_#fff] hover:translate-x-[1px] hover:translate-y-[1px]"
+              >
+                {isEnhancing ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3" />
+                )}
+                {isEnhancing ? "Enhancing..." : "Enhance with AI"}
+              </button>
+            </div>
             <Textarea
               placeholder="Describe the event..."
               value={formData.description}
