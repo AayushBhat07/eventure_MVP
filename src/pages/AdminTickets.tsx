@@ -334,9 +334,8 @@ function AdminTicketsContent() {
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto py-4">
           {/* Filter Tabs */}
           <div className="flex gap-2 mb-6">
             {(['all', 'open', 'closed'] as StatusFilter[]).map((filter) => (
@@ -407,6 +406,7 @@ function AdminTicketsContent() {
               ))}
             </div>
           )}
+          </div>
         </div>
 
         {/* Ticket Detail Modal */}

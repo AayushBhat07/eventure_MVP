@@ -321,7 +321,7 @@ function AdminEventsContent() {
       <div className="relative z-10">
         <AdminNavBar items={ADMIN_NAV_ITEMS} />
         <div className="pt-16 px-4">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-6 pb-4">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">EVENT ADMIN DASHBOARD</h1>
             {(() => {
               try {
@@ -344,9 +344,8 @@ function AdminEventsContent() {
               );
             })()}
           </div>
-        </div>
 
-        <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto py-4">
           {!allEvents ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <Loader2 className="h-12 w-12 animate-spin" />
@@ -430,6 +429,7 @@ function AdminEventsContent() {
               ))}
             </div>
           )}
+          </div>
         </div>
 
         {/* Create Event Modal */}
