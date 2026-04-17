@@ -53,23 +53,35 @@ function TabButton({ label, active, onClick }: { label: string; active: boolean;
   );
 }
 
-function BroadcastsSidebar() {
-  const channels = ['General', 'Announcements', 'Urgent'];
+type BroadcastChannel = "general" | "announcements" | "urgent";
+
+const BROADCAST_CHANNELS: { key: BroadcastChannel; label: string }[] = [
+  { key: "general", label: "General" },
+  { key: "announcements", label: "Announcements" },
+  { key: "urgent", label: "Urgent" },
+];
+
+function BroadcastsSidebar({ selectedChannel, onSelectChannel }: { selectedChannel: BroadcastChannel; onSelectChannel: (ch: BroadcastChannel) => void }) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-2">
         Channels
       </p>
-      {channels.map((ch, i) => (
+      {BROADCAST_CHANNELS.map((ch, i) => (
         <motion.button
-          key={ch}
+          key={ch.key}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.05 }}
-          className="w-full text-left px-4 py-3 border-2 border-black dark:border-white bg-white dark:bg-neutral-900 text-sm font-bold uppercase tracking-wide text-black dark:text-white hover:bg-[#6D28D9] hover:text-white transition-colors cursor-pointer flex items-center gap-2"
+          onClick={() => onSelectChannel(ch.key)}
+          className={`w-full text-left px-4 py-3 border-2 border-black dark:border-white text-sm font-bold uppercase tracking-wide transition-colors cursor-pointer flex items-center gap-2 ${
+            selectedChannel === ch.key
+              ? 'bg-[#6D28D9] text-white shadow-[3px_3px_0px_0px_#000] dark:shadow-[3px_3px_0px_0px_#fff]'
+              : 'bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-[#6D28D9] hover:text-white'
+          }`}
         >
           <Megaphone size={14} />
-          {ch}
+          {ch.label}
         </motion.button>
       ))}
     </div>
@@ -344,9 +356,9 @@ function EventChannelMessageCard({ message, index }: { message: any; index: numb
   );
 }
 
-function BroadcastsContent() {
+function BroadcastsContent({ selectedChannel }: { selectedChannel: BroadcastChannel }) {
   const { user } = useAuth();
-  const messages = useQuery(api.communication.listMessages);
+  const messages = useQuery(api.communication.listMessages, { channel: selectedChannel });
   const sendMessage = useMutation(api.communication.postMessage);
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
@@ -371,7 +383,7 @@ function BroadcastsContent() {
     setSending(true);
     try {
       const adminEmail = getAdminEmailFromSession();
-      await sendMessage({ content: trimmed, adminEmail });
+      await sendMessage({ content: trimmed, adminEmail, channel: selectedChannel });
       setContent('');
       toast.success('Broadcast sent!');
     } catch (e: any) {
@@ -397,7 +409,7 @@ function BroadcastsContent() {
     >
       <div className="mb-4">
         <h2 className="text-2xl font-black uppercase tracking-tight text-black dark:text-white">
-          Broadcast
+          {selectedChannel === 'general' ? 'General' : selectedChannel === 'announcements' ? 'Announcements' : 'Urgent'} Broadcast
         </h2>
       </div>
       {isAdmin ? (
@@ -591,6 +603,7 @@ function EventChannelsContent({ selectedEventId }: { selectedEventId: Id<"events
 export default function AdminCommunication() {
   const [activeTab, setActiveTab] = useState<Tab>('broadcasts');
   const [selectedEventId, setSelectedEventId] = useState<Id<"events"> | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<BroadcastChannel>('general');
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] dark:bg-neutral-950 flex flex-col">
@@ -615,14 +628,14 @@ export default function AdminCommunication() {
             className="border-2 border-black dark:border-white shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] bg-[#FDF8F3] dark:bg-neutral-900 p-4"
           >
             {activeTab === 'broadcasts' ? (
-              <BroadcastsSidebar />
+              <BroadcastsSidebar selectedChannel={selectedChannel} onSelectChannel={setSelectedChannel} />
             ) : (
               <EventChannelsSidebar selectedEventId={selectedEventId} onSelectEvent={setSelectedEventId} />
             )}
           </motion.div>
           <div className="border-2 border-black dark:border-white shadow-[6px_6px_0px_0px_#000] dark:shadow-[6px_6px_0px_0px_#fff] bg-white dark:bg-neutral-900 p-6 min-h-[400px] flex">
             {activeTab === 'broadcasts' ? (
-              <BroadcastsContent />
+              <BroadcastsContent selectedChannel={selectedChannel} />
             ) : (
               <EventChannelsContent selectedEventId={selectedEventId} />
             )}

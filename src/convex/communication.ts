@@ -4,8 +4,29 @@ import { getCurrentUser } from "./users";
 import { internal } from "./_generated/api";
 
 export const listMessages = query({
-  handler: async (ctx) => {
-    const messages = await ctx.db.query("admin_communication_messages").order("desc").take(100);
+  args: {
+    channel: v.optional(v.union(v.literal("general"), v.literal("announcements"), v.literal("urgent"))),
+  },
+  handler: async (ctx, args) => {
+    const channelFilter = args.channel || "general";
+    
+    let messages;
+    if (channelFilter === "general") {
+      // For "general" channel, include messages with no channel set (legacy) and explicit "general"
+      const allMessages = await ctx.db
+        .query("admin_communication_messages")
+        .order("desc")
+        .take(200);
+      messages = allMessages.filter(
+        (m) => !(m as any).channel || (m as any).channel === "general"
+      ).slice(0, 100);
+    } else {
+      messages = await ctx.db
+        .query("admin_communication_messages")
+        .withIndex("by_channel", (q) => q.eq("channel", channelFilter))
+        .order("desc")
+        .take(100);
+    }
     const messagesWithAuthors = await Promise.all(
       messages.map(async (message) => {
         // Try users table first
@@ -85,14 +106,18 @@ export const postMessage = mutation({
   args: {
     content: v.string(),
     adminEmail: v.optional(v.string()),
+    channel: v.optional(v.union(v.literal("general"), v.literal("announcements"), v.literal("urgent"))),
   },
   handler: async (ctx, args) => {
+    const channel = args.channel || "general";
+
     // 1. Try Convex auth user first
     const user = await getCurrentUser(ctx);
     if (user && user.role === "admin") {
       await ctx.db.insert("admin_communication_messages", {
         authorId: user._id,
         content: args.content,
+        channel,
       });
       return;
     }
@@ -129,10 +154,9 @@ export const postMessage = mutation({
         await ctx.db.insert("admin_communication_messages", {
           authorId: matchingUser._id,
           content: args.content,
+          channel,
         });
       } else {
-        // No users record — store with admin name in content as fallback
-        // Use the admin's _id cast (schema validation is off)
         const authorId = admin ? admin._id : (await ctx.db.query("teamMembers").withIndex("by_email", (q) => q.eq("email", normalizedEmail)).first())?._id;
         if (!authorId) {
           throw new Error("Could not resolve author");
@@ -140,6 +164,7 @@ export const postMessage = mutation({
         await ctx.db.insert("admin_communication_messages", {
           authorId: authorId as any,
           content: args.content,
+          channel,
         });
       }
       return;

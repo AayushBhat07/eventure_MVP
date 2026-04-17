@@ -79,11 +79,13 @@ const schema = defineSchema({
   admin_communication_messages: defineTable({
     authorId: v.id("users"),
     content: v.string(),
+    channel: v.optional(v.union(v.literal("general"), v.literal("announcements"), v.literal("urgent"))),
     reactions: v.optional(v.array(v.object({
       userId: v.id("users"),
       emoji: v.string(),
     }))),
-  }).index("by_author", ["authorId"]),
+  }).index("by_author", ["authorId"])
+    .index("by_channel", ["channel"]),
 
   teamMembers: defineTable({
     // Make userId optional to allow creation before linking to a users doc
