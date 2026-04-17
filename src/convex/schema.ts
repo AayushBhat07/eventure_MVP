@@ -53,6 +53,7 @@ const schema = defineSchema({
     status: v.union(v.literal("active"), v.literal("cancelled"), v.literal("completed")),
     volunteerIds: v.optional(v.array(v.id("teamMembers"))),
     eventType: v.optional(v.union(v.literal("individual"), v.literal("team"))),
+    imageUrl: v.optional(v.string()),
   })
     .index("by_start_date", ["startDate"])
     .index("by_status", ["status"]),
