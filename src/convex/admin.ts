@@ -126,3 +126,44 @@ export const adminLogin = action({
     }
   },
 });
+
+export const seedAdmin = action({
+  args: {
+    email: v.string(),
+    password: v.string(),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; message: string }> => {
+    try {
+      const normalizedEmail = args.email.toLowerCase();
+
+      // Check if admin already exists
+      const existing = await (ctx as any).runQuery(
+        internal.admin_creation.getAdminByEmail,
+        { email: normalizedEmail }
+      );
+
+      if (existing) {
+        return { success: false, message: "Admin with this email already exists" };
+      }
+
+      // Hash the password
+      const hashed = await bcrypt.hash(args.password, 12);
+
+      // Create the admin
+      await (ctx as any).runMutation(
+        (internal as any).admin_creation.createAdminInternal,
+        {
+          email: normalizedEmail,
+          passwordHash: hashed,
+          role: "admin",
+        }
+      );
+
+      return { success: true, message: "Admin created successfully" };
+    } catch (err: any) {
+      console.error("seedAdmin error:", err);
+      return { success: false, message: err.message || "Failed to create admin" };
+    }
+  },
+});
