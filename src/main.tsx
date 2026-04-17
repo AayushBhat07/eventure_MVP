@@ -24,6 +24,7 @@ import AdminTeam from "@/pages/AdminTeam.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import AdminTickets from "./pages/AdminTickets.tsx";
 import EventCheckIn from "./pages/EventCheckIn.tsx";
+import AdminEventAnalytics from "./pages/AdminEventAnalytics.tsx";
 import { Protected } from "@/lib/protected-page.tsx";
 import { AdminProtected } from "@/lib/admin-protected-page.tsx";
 import CompleteProfile from "./pages/CompleteProfile.tsx";
@@ -52,6 +53,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/admin-communication" element={<AdminProtected><AdminCommunication /></AdminProtected>} />
             <Route path="/admin-tickets" element={<AdminProtected><AdminTickets /></AdminProtected>} />
             <Route path="/admin-checkin" element={<AdminProtected><EventCheckIn /></AdminProtected>} />
+            <Route path="/admin-event-analytics" element={<AdminProtected><AdminEventAnalytics /></AdminProtected>} />
             <Route path="/admin-settings" element={<AdminProtected><AdminSettings /></AdminProtected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

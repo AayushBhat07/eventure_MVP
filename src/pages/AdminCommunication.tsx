@@ -4,7 +4,7 @@ import { AdminNavBar } from '@/components/admin/admin-navbar';
 import { Dock } from '@/components/ui/dock';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { MentionAutocomplete } from '@/components/ui/MentionAutocomplete';
-import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket, ScanLine } from 'lucide-react';
+import { Home, Calendar, Users, Settings, MessageSquare, Radio, Hash, Megaphone, Send, Ticket, ScanLine, BarChart3 } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,6 +15,7 @@ const ADMIN_NAV_ITEMS = [
   { name: 'Dashboard', url: '/admin-dashboard', icon: Home },
   { name: 'Events', url: '/admin-events', icon: Calendar },
   { name: 'Check-In', url: '/admin-checkin', icon: ScanLine },
+  { name: 'Analytics', url: '/admin-event-analytics', icon: BarChart3 },
   { name: 'Tickets', url: '/admin-tickets', icon: Ticket },
   { name: 'Communication', url: '/admin-communication', icon: MessageSquare },
   { name: 'Team', url: '/admin-team', icon: Users },
