@@ -14,7 +14,7 @@ export class ResendProvider implements EmailProvider {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: `${appName} <noreply@resend.dev>`,
+        from: `${appName} <onboarding@resend.dev>`,
         to: [email],
         subject: `Your ${appName} verification code`,
         html: `
@@ -32,7 +32,9 @@ export class ResendProvider implements EmailProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to send OTP: ${response.statusText}`);
+      const errorBody = await response.json().catch(() => ({}));
+      const errorMsg = (errorBody as any)?.message || response.statusText;
+      throw new Error(`Failed to send OTP: ${errorMsg}`);
     }
   }
 
@@ -44,7 +46,7 @@ export class ResendProvider implements EmailProvider {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: `${appName} <noreply@resend.dev>`,
+        from: `${appName} <onboarding@resend.dev>`,
         to: [email],
         subject: `Sign in to ${appName}`,
         html: `
@@ -68,7 +70,9 @@ export class ResendProvider implements EmailProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to send magic link: ${response.statusText}`);
+      const errorBody = await response.json().catch(() => ({}));
+      const errorMsg = (errorBody as any)?.message || response.statusText;
+      throw new Error(`Failed to send magic link: ${errorMsg}`);
     }
   }
 }
@@ -162,18 +166,25 @@ export function createEmailProvider(): EmailProvider {
   const provider = process.env.EMAIL_PROVIDER || "vly";
   
   switch (provider) {
-    case "resend":
+    case "resend": {
       const resendApiKey = process.env.RESEND_API_KEY;
       if (!resendApiKey) {
         throw new Error("RESEND_API_KEY environment variable is required");
       }
       return new ResendProvider(resendApiKey);
+    }
     case "vly":
-    default:
+    default: {
       const vlyApiKey = process.env.VLY_API_KEY || process.env.VLY_INTEGRATION_KEY;
       if (!vlyApiKey) {
-        throw new Error("VLY_API_KEY or VLY_INTEGRATION_KEY environment variable is required");
+        // Fall back to Resend if VLY key is missing but Resend key exists
+        const resendApiKey = process.env.RESEND_API_KEY;
+        if (resendApiKey) {
+          return new ResendProvider(resendApiKey);
+        }
+        throw new Error("No email provider configured. Set VLY_INTEGRATION_KEY or RESEND_API_KEY.");
       }
       return new VlyEmailProvider(vlyApiKey);
+    }
   }
 }
