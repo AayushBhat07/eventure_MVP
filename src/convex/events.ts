@@ -222,6 +222,14 @@ export const createEventAsAdmin = mutation({
       imageUrl: args.imageUrl,
     });
 
+    // If no imageUrl was provided, schedule automatic image generation
+    if (!args.imageUrl) {
+      await ctx.scheduler.runAfter(0, internal.ai.generateAndSetEventImage, {
+        eventId,
+        eventName: args.name,
+      });
+    }
+
     return {
       success: true,
       message: "Event created successfully",
