@@ -16,21 +16,8 @@ import { api } from "@/convex/_generated/api";
 import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
 
-const PLACEHOLDER_IMAGES = [
-  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1544717684-7ba720c2b5ea?w=600&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=600&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=600&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&h=300&fit=crop",
-];
-
-function getPlaceholderImage(id: string) {
-  const idx = id.charCodeAt(id.length - 1) % PLACEHOLDER_IMAGES.length;
-  return PLACEHOLDER_IMAGES[idx];
-}
-
-// Generate a deterministic color from event name for fallback
-const FALLBACK_COLORS = [
+// Generate a deterministic color from event name
+const CARD_COLORS = [
   "from-blue-600 to-cyan-500",
   "from-emerald-600 to-teal-500",
   "from-amber-600 to-yellow-500",
@@ -45,15 +32,7 @@ function getNameColor(name: string) {
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return FALLBACK_COLORS[Math.abs(hash) % FALLBACK_COLORS.length];
-}
-
-function getNameInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() || "")
-    .join("");
+  return CARD_COLORS[Math.abs(hash) % CARD_COLORS.length];
 }
 
 function toTimestamp(val: number | Date | unknown): number {
@@ -71,14 +50,12 @@ function formatDate(ts: number) {
 }
 
 function getEventStatus(event: any): { label: string; color: string } {
-  // Use admin-set status from DB first
   if (event.status === "completed") {
     return { label: "COMPLETED", color: "bg-neutral-400 text-black border-black" };
   }
   if (event.status === "cancelled") {
     return { label: "CANCELLED", color: "bg-red-400 text-black border-black" };
   }
-  // For "active" events, derive ongoing/upcoming from dates
   const now = Date.now();
   const start = toTimestamp(event.startDate);
   const end = toTimestamp(event.endDate);
@@ -100,32 +77,16 @@ function EventCard({ event, index }: { event: any; index: number }) {
       onClick={() => navigate(`/event/${event._id}`)}
       className="border-2 border-black dark:border-white bg-white dark:bg-neutral-900 shadow-[6px_6px_0px_#000] dark:shadow-[6px_6px_0px_#fff] overflow-hidden flex flex-col cursor-pointer hover:shadow-[3px_3px_0px_#000] dark:hover:shadow-[3px_3px_0px_#fff] hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150"
     >
-      {/* Image */}
-      <div className="relative aspect-video overflow-hidden">
-        {event.imageUrl ? (
-          <img
-            src={event.imageUrl}
-            alt={event.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              const fallback = (e.target as HTMLImageElement).nextElementSibling;
-              if (fallback) (fallback as HTMLElement).style.display = 'flex';
-            }}
-          />
-        ) : null}
-        <div
-          className={`w-full h-full bg-gradient-to-br ${getNameColor(event.name)} flex items-center justify-center ${event.imageUrl ? 'hidden' : 'flex'}`}
-          style={event.imageUrl ? { display: 'none' } : undefined}
+      {/* Handwriting-styled event name banner */}
+      <div className={`relative aspect-video overflow-hidden bg-gradient-to-br ${getNameColor(event.name)} flex items-center justify-center p-6`}>
+        <span
+          className="text-3xl sm:text-4xl text-white/90 text-center leading-tight select-none drop-shadow-md"
+          style={{ fontFamily: "'Caveat', cursive", fontWeight: 700 }}
         >
-          <span className="text-4xl font-black text-white/80 tracking-wider select-none">
-            {getNameInitials(event.name)}
-          </span>
-        </div>
+          {event.name}
+        </span>
         <div className="absolute top-3 left-3">
-          <span
-            className={`text-[10px] font-black uppercase px-2 py-1 border-2 ${status.color}`}
-          >
+          <span className={`text-[10px] font-black uppercase px-2 py-1 border-2 ${status.color}`}>
             {status.label}
           </span>
         </div>

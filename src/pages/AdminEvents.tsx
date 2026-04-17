@@ -82,24 +82,6 @@ function AdminEventsContent() {
   const updateEventAsAdmin = useMutation(api.events.updateEventAsAdmin);
   const deleteEventAsAdmin = useMutation(api.events.deleteEventAsAdmin);
   const enhanceDescription = useAction(api.ai.enhanceEventDescription);
-  const generateAllImages = useAction(api.ai.generateImagesForAllEvents);
-  const [isGeneratingAllImages, setIsGeneratingAllImages] = useState(false);
-
-  const handleGenerateAllImages = async () => {
-    setIsGeneratingAllImages(true);
-    try {
-      const result = await generateAllImages({ overwrite: true });
-      if (result.success) {
-        toast.success(result.message);
-      } else {
-        toast.error(result.message || "Failed to generate images");
-      }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to generate images");
-    } finally {
-      setIsGeneratingAllImages(false);
-    }
-  };
 
   // Get individual participants for the selected event
   const participants = useQuery(
@@ -359,29 +341,14 @@ function AdminEventsContent() {
               try {
                 const s = sessionStorage.getItem("adminUser");
                 if (s) { const p = JSON.parse(s); if (p?.role === "admin") return (
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      className="font-mono border-2 border-black dark:border-white"
-                      onClick={handleGenerateAllImages}
-                      disabled={isGeneratingAllImages}
-                    >
-                      {isGeneratingAllImages ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <span className="mr-2">🖼️</span>
-                      )}
-                      {isGeneratingAllImages ? "Regenerating..." : "Regenerate All Images"}
-                    </Button>
-                    <Button
-                      className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
-                      size="lg"
-                      onClick={() => setCreateModalOpen(true)}
-                    >
-                      <Plus className="mr-2 h-5 w-5" />
-                      CREATE EVENT
-                    </Button>
-                  </div>
+                  <Button
+                    className="bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 font-mono text-lg px-8 py-4 border-2 border-black dark:border-white"
+                    size="lg"
+                    onClick={() => setCreateModalOpen(true)}
+                  >
+                    <Plus className="mr-2 h-5 w-5" />
+                    CREATE EVENT
+                  </Button>
                 ); }
               } catch {}
               return (
@@ -413,16 +380,14 @@ function AdminEventsContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {allEvents.map((event: any) => (
                 <Card key={event._id} className="border-4 border-black dark:border-white bg-card/80 backdrop-blur-sm overflow-hidden">
-                  {event.imageUrl && (
-                    <div className="w-full h-40 overflow-hidden border-b-4 border-black dark:border-white">
-                      <img
-                        src={event.imageUrl}
-                        alt={event.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    </div>
-                  )}
+                  <div className="w-full h-32 flex items-center justify-center bg-gradient-to-br from-indigo-600 to-violet-500 border-b-4 border-black dark:border-white p-4">
+                    <span
+                      className="text-2xl sm:text-3xl text-white/90 text-center leading-tight select-none drop-shadow-md"
+                      style={{ fontFamily: "'Caveat', cursive", fontWeight: 700 }}
+                    >
+                      {event.name}
+                    </span>
+                  </div>
                   <CardContent className="p-6">
                     <h3 className="text-xl font-bold mb-2 tracking-tighter uppercase">{event.name}</h3>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{event.description}</p>

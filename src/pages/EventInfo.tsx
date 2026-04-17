@@ -289,7 +289,7 @@ export default function EventInfo() {
             <h2 className="text-2xl font-black uppercase text-black dark:text-white mb-4 border-b-2 border-black dark:border-white pb-2">
               Description
             </h2>
-            <p className="text-sm leading-relaxed text-black dark:text-white">{event.description}</p>
+            <p className="text-sm leading-relaxed text-black dark:text-white whitespace-pre-wrap">{event.description}</p>
           </div>
 
           <div>
