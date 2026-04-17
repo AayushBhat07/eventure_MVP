@@ -954,3 +954,39 @@ export const getAllEventsForImageRegeneration = internalQuery({
     return events.map((e) => ({ _id: e._id, name: e.name }));
   },
 });
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const getAllWinnersWithEvents = query({
+  args: {},
+  handler: async (ctx) => {
+    const winners = await ctx.db.query("event_winners").take(50);
+    const result = await Promise.all(
+      winners.map(async (winner) => {
+        const event = await ctx.db.get(winner.eventId);
+        let photoUrl = winner.photoUrl;
+        // If photoUrl looks like a storage ID (not a URL), get the signed URL
+        if (photoUrl && !photoUrl.startsWith("http")) {
+          try {
+            photoUrl = await ctx.storage.getUrl(photoUrl as any) || undefined;
+          } catch {
+            photoUrl = undefined;
+          }
+        }
+        return {
+          ...winner,
+          photoUrl,
+          eventName: event?.name || "Unknown Event",
+        };
+      })
+    );
+    // Sort by createdAt desc
+    result.sort((a, b) => b.createdAt - a.createdAt);
+    return result;
+  },
+});

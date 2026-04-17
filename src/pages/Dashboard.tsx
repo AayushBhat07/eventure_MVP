@@ -9,6 +9,7 @@ import { QuickStatsWidget } from "@/components/dashboard/QuickStatsWidget";
 import { ProfileWidget } from "@/components/dashboard/ProfileWidget";
 import { EventDiscoveryGrid } from "@/components/dashboard/EventDiscoveryGrid";
 import { BroadcastWidget } from "@/components/dashboard/BroadcastWidget";
+import { WinnersWidget } from "@/components/dashboard/WinnersWidget";
 import { CreateTicketModal } from "@/components/dashboard/CreateTicketModal";
 import { TicketsListPanel } from "@/components/dashboard/TicketsListPanel";
 import { useState } from "react";
@@ -119,6 +120,12 @@ export default function Dashboard() {
           <div>
             <EventDiscoveryGrid />
           </div>
+        </div>
+
+        {/* Winners Section */}
+        <div className="border-2 border-black dark:border-white bg-[#fffbe8] dark:bg-yellow-900/20 p-5 mb-6">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-black/60 dark:text-white/60 mb-3">🏆 WINNERS</p>
+          <WinnersWidget />
         </div>
       </div>
     </Protected>

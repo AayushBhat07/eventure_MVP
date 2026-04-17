@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -47,6 +47,7 @@ import {
   Loader2,
   Award,
   Image as ImageIcon,
+  Upload,
 } from "lucide-react";
 
 function StatusBadge({ status }: { status: string }) {
@@ -142,8 +143,12 @@ export default function AdminEventAnalytics() {
   const navigate = useNavigate();
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [showAddWinner, setShowAddWinner] = useState(false);
-  const [winnerForm, setWinnerForm] = useState({ rank: "1st", winnerName: "", photoUrl: "", description: "" });
+  const [winnerForm, setWinnerForm] = useState({ rank: "1st", winnerName: "", description: "" });
+  const [winnerPhotoFile, setWinnerPhotoFile] = useState<File | null>(null);
+  const [winnerPhotoPreview, setWinnerPhotoPreview] = useState<string>("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [sendingEmails, setSendingEmails] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const adminSession = getAdminSession();
   const isAdmin = isAdminRole();
@@ -159,6 +164,7 @@ export default function AdminEventAnalytics() {
   const addWinner = useMutation(api.events.addWinner);
   const deleteWinner = useMutation(api.events.deleteWinner);
   const sendCheckInEmails = useMutation(api.events.sendCheckInEmailsForEvent);
+  const generateUploadUrl = useMutation(api.events.generateUploadUrl);
 
   const handleMenuItemClick = (itemName: string) => {
     const routes: Record<string, string> = {
@@ -181,28 +187,6 @@ export default function AdminEventAnalytics() {
       toast.success(`Event marked as ${newStatus}`);
     } catch {
       toast.error("Failed to update status");
-    }
-  };
-
-  const handleAddWinner = async () => {
-    if (!eventId || !winnerForm.winnerName.trim()) return;
-    try {
-      const result = await addWinner({
-        eventId,
-        rank: winnerForm.rank,
-        winnerName: winnerForm.winnerName.trim(),
-        photoUrl: winnerForm.photoUrl.trim() || undefined,
-        description: winnerForm.description.trim() || undefined,
-      });
-      if (result.success) {
-        toast.success("Winner added!");
-        setWinnerForm({ rank: "1st", winnerName: "", photoUrl: "", description: "" });
-        setShowAddWinner(false);
-      } else {
-        toast.error(result.message);
-      }
-    } catch {
-      toast.error("Failed to add winner");
     }
   };
 
@@ -232,10 +216,62 @@ export default function AdminEventAnalytics() {
     }
   };
 
+  const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setWinnerPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setWinnerPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const formatDate = (ts: number) =>
     new Date(ts).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
   const formatTime = (ts: number) =>
     new Date(ts).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+  const handleAddWinner = async () => {
+    if (!eventId || !winnerForm.winnerName.trim()) return;
+    setUploadingPhoto(true);
+    try {
+      let photoUrl: string | undefined;
+
+      if (winnerPhotoFile) {
+        // Upload to Convex storage
+        const uploadUrl = await generateUploadUrl();
+        const uploadResponse = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": winnerPhotoFile.type },
+          body: winnerPhotoFile,
+        });
+        if (!uploadResponse.ok) throw new Error("Upload failed");
+        const { storageId } = await uploadResponse.json();
+        // Get the public URL for the storage ID
+        photoUrl = storageId;
+      }
+
+      const result = await addWinner({
+        eventId,
+        rank: winnerForm.rank,
+        winnerName: winnerForm.winnerName.trim(),
+        photoUrl,
+        description: winnerForm.description.trim() || undefined,
+      });
+      if (result.success) {
+        toast.success("Winner added!");
+        setWinnerForm({ rank: "1st", winnerName: "", description: "" });
+        setWinnerPhotoFile(null);
+        setWinnerPhotoPreview("");
+        setShowAddWinner(false);
+      } else {
+        toast.error(result.message);
+      }
+    } catch {
+      toast.error("Failed to add winner");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-mono relative">
@@ -463,15 +499,42 @@ export default function AdminEventAnalytics() {
               />
             </div>
             <div>
-              <Label className="text-xs font-black uppercase">PHOTO URL (OPTIONAL)</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <ImageIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <Input
-                  value={winnerForm.photoUrl}
-                  onChange={(e) => setWinnerForm((p) => ({ ...p, photoUrl: e.target.value }))}
-                  placeholder="https://example.com/photo.jpg"
-                  className="border-4 border-black dark:border-white rounded-none font-mono"
+              <Label className="text-xs font-black uppercase">PHOTO (OPTIONAL)</Label>
+              <div className="mt-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setWinnerPhotoFile(file);
+                      setWinnerPhotoPreview(URL.createObjectURL(file));
+                    }
+                  }}
                 />
+                {winnerPhotoPreview ? (
+                  <div className="relative border-4 border-black dark:border-white">
+                    <img src={winnerPhotoPreview} alt="Preview" className="w-full h-32 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setWinnerPhotoFile(null); setWinnerPhotoPreview(""); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                      className="absolute top-1 right-1 bg-red-600 text-white border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase"
+                    >
+                      REMOVE
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-4 border-dashed border-black dark:border-white py-6 flex flex-col items-center gap-2 hover:bg-muted/20 transition-colors"
+                  >
+                    <Upload className="h-6 w-6" />
+                    <span className="text-xs font-black uppercase">CLICK TO UPLOAD PHOTO</span>
+                  </button>
+                )}
               </div>
             </div>
             <div>
