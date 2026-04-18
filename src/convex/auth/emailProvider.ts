@@ -163,14 +163,21 @@ export class VlyEmailProvider implements EmailProvider {
 
 // Factory function to create email provider based on environment
 export function createEmailProvider(): EmailProvider {
-  // Always prefer VLY email provider first
+  // Try Resend first if RESEND_FROM_EMAIL is set (means domain is verified)
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const resendFromEmail = process.env.RESEND_FROM_EMAIL;
+  
+  if (resendApiKey && resendFromEmail) {
+    return new ResendProvider(resendApiKey);
+  }
+
+  // Try VLY email provider
   const vlyApiKey = process.env.VLY_API_KEY || process.env.VLY_INTEGRATION_KEY;
   if (vlyApiKey) {
     return new VlyEmailProvider(vlyApiKey);
   }
 
-  // Only use Resend if explicitly configured with a custom domain (not the test domain)
-  const resendApiKey = process.env.RESEND_API_KEY;
+  // Fall back to Resend even without custom from (will use onboarding@resend.dev)
   if (resendApiKey) {
     return new ResendProvider(resendApiKey);
   }
