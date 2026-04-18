@@ -4,9 +4,10 @@ export interface EmailProvider {
 }
 
 export class ResendProvider implements EmailProvider {
-  constructor(private apiKey: string) {}
+  constructor(private apiKey: string, private fromEmail?: string) {}
 
   async sendOtp(email: string, otp: string, appName: string): Promise<void> {
+    const from = this.fromEmail || `${appName} <onboarding@resend.dev>`;
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -14,7 +15,7 @@ export class ResendProvider implements EmailProvider {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL || `${appName} <onboarding@resend.dev>`,
+        from,
         to: [email],
         subject: `Your ${appName} verification code`,
         html: `
@@ -39,6 +40,7 @@ export class ResendProvider implements EmailProvider {
   }
 
   async sendMagicLink(email: string, magicLink: string, appName: string): Promise<void> {
+    const from = this.fromEmail || `${appName} <onboarding@resend.dev>`;
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -46,7 +48,7 @@ export class ResendProvider implements EmailProvider {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL || `${appName} <onboarding@resend.dev>`,
+        from,
         to: [email],
         subject: `Sign in to ${appName}`,
         html: `
@@ -87,7 +89,7 @@ export class VlyEmailProvider implements EmailProvider {
     text: string;
   }): Promise<void> {
     const keyPreview = this.apiKey ? `${this.apiKey.substring(0, 6)}...${this.apiKey.substring(this.apiKey.length - 4)}` : "MISSING";
-    console.log(`[VlyEmail] Sending to ${payload.to.join(",")} | key: ${keyPreview} | endpoint: https://integrations.vly.ai/v1/email/send`);
+    console.log(`[VlyEmail] Sending to ${payload.to.join(",")} | key: ${keyPreview}`);
 
     const response = await fetch("https://integrations.vly.ai/v1/email/send", {
       method: "POST",
@@ -108,12 +110,12 @@ export class VlyEmailProvider implements EmailProvider {
     const responseData = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errorMsg = responseData?.error || `Request failed with status ${response.status}: ${response.statusText}`;
-      console.error("[VlyEmail] API error:", { status: response.status, statusText: response.statusText, body: JSON.stringify(responseData), keyPreview });
+      const errorMsg = (responseData as any)?.error || `Request failed with status ${response.status}: ${response.statusText}`;
+      console.error("[VlyEmail] API error:", { status: response.status, body: JSON.stringify(responseData), keyPreview });
       throw new Error(errorMsg);
     }
 
-    console.log("[VlyEmail] Email sent successfully:", { id: responseData?.id, status: responseData?.status });
+    console.log("[VlyEmail] Email sent successfully");
   }
   
   async sendOtp(email: string, otp: string, appName: string): Promise<void> {
@@ -163,24 +165,27 @@ export class VlyEmailProvider implements EmailProvider {
 
 // Factory function to create email provider based on environment
 export function createEmailProvider(): EmailProvider {
-  // Try Resend first if RESEND_FROM_EMAIL is set (means domain is verified)
   const resendApiKey = process.env.RESEND_API_KEY;
   const resendFromEmail = process.env.RESEND_FROM_EMAIL;
-  
+  const vlyApiKey = process.env.VLY_API_KEY || process.env.VLY_INTEGRATION_KEY;
+
+  // If Resend is configured with a verified from address, use it (best option)
   if (resendApiKey && resendFromEmail) {
-    return new ResendProvider(resendApiKey);
+    console.log("[EmailProvider] Using Resend with verified domain");
+    return new ResendProvider(resendApiKey, resendFromEmail);
   }
 
   // Try VLY email provider
-  const vlyApiKey = process.env.VLY_API_KEY || process.env.VLY_INTEGRATION_KEY;
   if (vlyApiKey) {
+    console.log("[EmailProvider] Using VLY email provider");
     return new VlyEmailProvider(vlyApiKey);
   }
 
-  // Fall back to Resend even without custom from (will use onboarding@resend.dev)
+  // Fall back to Resend without custom from (limited to account owner's email only)
   if (resendApiKey) {
+    console.log("[EmailProvider] Using Resend with default from (limited recipients)");
     return new ResendProvider(resendApiKey);
   }
 
-  throw new Error("No email provider configured. Set VLY_INTEGRATION_KEY or RESEND_API_KEY.");
+  throw new Error("No email provider configured. Set VLY_INTEGRATION_KEY or RESEND_API_KEY with RESEND_FROM_EMAIL.");
 }
