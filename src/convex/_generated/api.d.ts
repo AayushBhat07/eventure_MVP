@@ -24,6 +24,7 @@ import type * as devTools from "../devTools.js";
 import type * as email from "../email.js";
 import type * as events from "../events.js";
 import type * as generators_createAdminUser from "../generators/createAdminUser.js";
+import type * as generators_createPasswordUser from "../generators/createPasswordUser.js";
 import type * as generators_createSampleData from "../generators/createSampleData.js";
 import type * as generators_createSampleEvents from "../generators/createSampleEvents.js";
 import type * as http from "../http.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   email: typeof email;
   events: typeof events;
   "generators/createAdminUser": typeof generators_createAdminUser;
+  "generators/createPasswordUser": typeof generators_createPasswordUser;
   "generators/createSampleData": typeof generators_createSampleData;
   "generators/createSampleEvents": typeof generators_createSampleEvents;
   http: typeof http;
