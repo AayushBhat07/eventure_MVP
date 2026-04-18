@@ -926,25 +926,74 @@ export const sendCheckInEmailsForEvent = mutation({
             checkInCode: code,
           });
         } else {
-          // No individual registration for leader, still notify them
-          const teamCode = `TEAM-${teamReg.teamName.slice(0, 4).toUpperCase()}`;
+          // No individual registration for leader — create one with a new code
+          let newCode: string;
+          do { newCode = generateCode(); } while (existingCodes.has(newCode));
+          existingCodes.add(newCode);
+          await ctx.db.insert("eventRegistrations", {
+            eventId: args.eventId,
+            userId: teamReg.registeredByUserId,
+            registrationDate: teamReg.registrationDate,
+            status: "registered",
+            checkInCode: newCode,
+          });
           updatedRegistrations.push({
             userEmail: leader.email,
             userName: leader.name || teamReg.teamName,
-            checkInCode: teamCode,
+            checkInCode: newCode,
           });
         }
       }
 
-      // Team members
+      // Team members — look up their user accounts and create/update eventRegistrations
       for (const member of teamReg.members) {
         if (member.email) {
-          // Generate a unique code for each member
+          // Find user account by email
+          const memberUser = await ctx.db
+            .query("users")
+            .withIndex("email", (q) => q.eq("email", member.email))
+            .first();
+
           let memberCode: string;
-          do {
-            memberCode = generateCode();
-          } while (existingCodes.has(memberCode));
-          existingCodes.add(memberCode);
+
+          if (memberUser) {
+            // Check if they already have an eventRegistration
+            const existingReg = await ctx.db
+              .query("eventRegistrations")
+              .withIndex("by_user_and_event", (q) =>
+                q.eq("userId", memberUser._id).eq("eventId", args.eventId)
+              )
+              .first();
+
+            if (existingReg) {
+              // Use or generate code for existing registration
+              memberCode = existingReg.checkInCode || (() => {
+                let c: string;
+                do { c = generateCode(); } while (existingCodes.has(c));
+                return c;
+              })();
+              if (!existingReg.checkInCode) {
+                existingCodes.add(memberCode);
+                await ctx.db.patch(existingReg._id, { checkInCode: memberCode });
+              }
+            } else {
+              // Create a new eventRegistration for this team member
+              do { memberCode = generateCode(); } while (existingCodes.has(memberCode));
+              existingCodes.add(memberCode);
+              await ctx.db.insert("eventRegistrations", {
+                eventId: args.eventId,
+                userId: memberUser._id,
+                registrationDate: teamReg.registrationDate,
+                status: "registered",
+                checkInCode: memberCode,
+              });
+            }
+          } else {
+            // No user account — generate code but can't store it in eventRegistrations
+            // Just send the email with a code (they'll need to check in manually)
+            do { memberCode = generateCode(); } while (existingCodes.has(memberCode));
+            existingCodes.add(memberCode);
+          }
 
           updatedRegistrations.push({
             userEmail: member.email,
